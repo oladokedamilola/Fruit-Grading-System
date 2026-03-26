@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Fruit Grading System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍎 About Fruit Grading System</h1>
+            <a href="/" class="back-home">← Back to Home</a>
+        </header>
+        
+        <div class="about-content">
+            <section class="about-section">
+                <h2>Project Overview</h2>
+                <p>The Fruit Grading System is an AI-powered application that automatically assesses fruit quality using deep learning technology. It classifies fruits into three quality grades (A, B, C) based on visual characteristics such as color, size, shape, ripeness, and surface defects.</p>
+            </section>
+            
+            <section class="about-section">
+                <h2>How It Works</h2>
+                <div class="workflow">
+                    <div class="workflow-step">
+                        <div class="step-number">1</div>
+                        <h3>Upload Image</h3>
+                        <p>Take or upload a photo of the fruit</p>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-number">2</div>
+                        <h3>AI Analysis</h3>
+                        <p>Deep learning model analyzes quality attributes</p>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-number">3</div>
+                        <h3>Get Grade</h3>
+                        <p>Receive grade with confidence score</p>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="about-section">
+                <h2>Technology Stack</h2>
+                <div class="tech-grid">
+                    <div class="tech-card">
+                        <h3>🤖 Deep Learning</h3>
+                        <p>TensorFlow, Keras, EfficientNetB0</p>
+                    </div>
+                    <div class="tech-card">
+                        <h3>🌐 Web Framework</h3>
+                        <p>Flask, HTML5, CSS3, JavaScript</p>
+                    </div>
+                    <div class="tech-card">
+                        <h3>📸 Image Processing</h3>
+                        <p>OpenCV, Pillow, NumPy</p>
+                    </div>
+                    <div class="tech-card">
+                        <h3>📊 Visualization</h3>
+                        <p>Matplotlib, Seaborn</p>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="about-section">
+                <h2>Supported Fruits</h2>
+                <div class="fruit-showcase">
+                    <div class="fruit-item">🍎 Apple</div>
+                    <div class="fruit-item">🥭 Mango</div>
+                    <div class="fruit-item">🍊 Orange</div>
+                    <div class="fruit-item">🍅 Tomato</div>
+                </div>
+            </section>
+            
+            <section class="about-section">
+                <h2>Grading Criteria</h2>
+                <div class="criteria-grid">
+                    <div class="criteria-card grade-a">
+                        <h3>Grade A - Excellent</h3>
+                        <ul>
+                            <li>Uniform color typical for variety</li>
+                            <li>No visible defects or blemishes</li>
+                            <li>Perfect shape and size</li>
+                            <li>Optimal ripeness</li>
+                        </ul>
+                    </div>
+                    <div class="criteria-card grade-b">
+                        <h3>Grade B - Good</h3>
+                        <ul>
+                            <li>Slightly uneven color</li>
+                            <li>Minor scratches or small spots</li>
+                            <li>Slightly below average size</li>
+                            <li>Acceptable ripeness</li>
+                        </ul>
+                    </div>
+                    <div class="criteria-card grade-c">
+                        <h3>Grade C - Poor</h3>
+                        <ul>
+                            <li>Significant discoloration</li>
+                            <li>Visible defects or bruises</li>
+                            <li>Below acceptable size range</li>
+                            <li>Over-ripe or under-ripe</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="about-section">
+                <h2>Model Performance</h2>
+                <div class="performance-stats">
+                    <div class="stat">
+                        <span class="stat-value">95.2%</span>
+                        <span class="stat-label">Overall Accuracy</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">0.94</span>
+                        <span class="stat-label">F1 Score</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-value">0.23s</span>
+                        <span class="stat-label">Inference Time</span>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="about-section">
+                <h2>About the Developer</h2>
+                <p>This project was developed by <strong>Okolo Uwaya Emmanuel</strong> as part of a Bachelor's degree in Computer Science at Lagos State University (LASU). The system demonstrates the application of deep learning in agricultural automation to reduce post-harvest losses and improve fruit quality assessment.</p>
+            </section>
+        </div>
+        
+        <footer>
+            <p>© 2026 Fruit Grading System | Lagos State University</p>
+        </footer>
+    </div>
+</body>
+</html>

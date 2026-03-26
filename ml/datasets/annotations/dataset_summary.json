@@ -1,0 +1,16 @@
+{
+  "total_images": 212,
+  "train": 148,
+  "validation": 32,
+  "test": 32,
+  "fruit_distribution": {
+    "apples": 82,
+    "oranges": 66,
+    "mangos": 64
+  },
+  "grade_distribution": {
+    "B": 88,
+    "A": 78,
+    "C": 46
+  }
+}

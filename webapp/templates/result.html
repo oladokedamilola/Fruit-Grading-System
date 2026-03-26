@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grading Result - Fruit Grading System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍎 Grading Result</h1>
+            <a href="/" class="back-home">← Back to Home</a>
+        </header>
+        
+        <div class="result-card">
+            <div class="result-header">
+                <div class="fruit-type">{{ fruit_type|title }}</div>
+                <div class="grade-badge grade-{{ grade|lower }}">Grade {{ grade }}</div>
+            </div>
+            
+            <div class="result-body">
+                <div class="result-image-container">
+                    <img src="{{ image_url }}" alt="Fruit image" class="result-image-large">
+                </div>
+                
+                <div class="result-stats">
+                    <div class="confidence-section">
+                        <h3>Confidence Score</h3>
+                        <div class="confidence-circle">
+                            <svg viewBox="0 0 36 36" class="circular-chart">
+                                <path class="circle-bg"
+                                    d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="circle"
+                                    stroke-dasharray="{{ confidence_percent }}, 100"
+                                    d="M18 2.0845
+                                    a 15.9155 15.9155 0 0 1 0 31.831
+                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <text x="18" y="20.35" class="percentage">{{ "%.1f"|format(confidence * 100) }}%</text>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <div class="grade-breakdown">
+                        <h3>Grade Breakdown</h3>
+                        {% for grade, score in grade_confidences.items() %}
+                        <div class="breakdown-item">
+                            <span class="grade-label grade-{{ grade|lower }}">Grade {{ grade }}</span>
+                            <div class="breakdown-bar">
+                                <div class="breakdown-fill" style="width: {{ score * 100 }}%"></div>
+                            </div>
+                            <span class="breakdown-score">{{ "%.1f"|format(score * 100) }}%</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="result-footer">
+                <p class="processing-time">Processing time: {{ "%.3f"|format(processing_time) }} seconds</p>
+                <div class="action-buttons">
+                    <button onclick="location.href='/'" class="btn-primary">Grade Another</button>
+                    <button onclick="window.print()" class="btn-secondary">Print Result</button>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Powered by Deep Learning | Fruit Grading System v1.0</p>
+        </footer>
+    </div>
+</body>
+</html>
