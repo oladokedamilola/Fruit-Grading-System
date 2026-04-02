@@ -22,7 +22,6 @@ venv.bak/
 # Project specific - Large files
 ml/datasets/raw/
 ml/datasets/processed/
-ml/models/
 webapp/static/uploads/
 webapp/static/images/uploads/
 

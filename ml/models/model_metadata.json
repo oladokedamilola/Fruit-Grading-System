@@ -1,0 +1,25 @@
+{
+  "model_type": "EfficientNetB0",
+  "input_shape": [
+    224,
+    224,
+    3
+  ],
+  "num_classes": 12,
+  "fruit_types": [
+    "apples",
+    "mangos",
+    "oranges"
+  ],
+  "grades": [
+    "A",
+    "B",
+    "C"
+  ],
+  "training_date": "2026-03-26T16:09:36.938452",
+  "test_accuracy": 0.125,
+  "total_images": 212,
+  "training_images": 148,
+  "validation_images": 32,
+  "test_images": 32
+}
