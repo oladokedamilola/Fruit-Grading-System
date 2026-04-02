@@ -1,0 +1,846 @@
+{% extends "base.html" %}
+
+{% block title %}Grade Fruit - FruitSight{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Upload Page Specific Styles */
+    .upload-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+        animation: fadeInUp 0.6s ease-out;
+        overflow-x: hidden;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .upload-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .upload-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        animation: slideInDown 0.6s ease-out;
+    }
+    
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .upload-header p {
+        color: rgba(255,255,255,0.9);
+        font-size: 1.1rem;
+        animation: fadeIn 0.8s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+    
+    /* Upload Area */
+    .upload-area {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 2px dashed rgba(255, 255, 255, 0.3);
+        border-radius: 1.5rem;
+        padding: 3rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        animation: scaleIn 0.5s ease-out;
+    }
+    
+    @keyframes scaleIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    .upload-area:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: var(--primary);
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    }
+    
+    .upload-area.drag-over {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: var(--primary);
+        transform: scale(1.02);
+    }
+    
+    .upload-content {
+        color: white;
+    }
+    
+    .upload-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        animation: float 3s ease-in-out infinite;
+        color: var(--primary);
+    }
+    
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+    
+    .upload-content h3 {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .upload-content p {
+        margin-bottom: 1.5rem;
+        opacity: 0.9;
+    }
+    
+    .file-info {
+        margin-top: 1rem;
+        font-size: 0.875rem;
+        opacity: 0.7;
+    }
+    
+    /* Supported Fruits Badges */
+    .supported-fruits {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .fruit-badge {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    
+    .fruit-badge:hover {
+        background: var(--primary);
+        transform: translateY(-2px);
+    }
+    
+    .fruit-badge i {
+        font-size: 1rem;
+    }
+    
+    /* Tips Section */
+    .tips-section {
+        margin-top: 2rem;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        backdrop-filter: blur(10px);
+        animation: slideInUp 0.6s ease-out;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .tips-section h3 {
+        color: white;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .tips-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .tip-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.75rem;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.3s ease;
+    }
+    
+    .tip-card:hover {
+        background: rgba(99, 102, 241, 0.2);
+        transform: translateX(5px);
+    }
+    
+    .tip-card i {
+        font-size: 1.25rem;
+        color: var(--primary);
+    }
+    
+    .tip-card span {
+        color: white;
+        font-size: 0.875rem;
+    }
+    
+    /* Modal Enhancements */
+    .preview-modal-content {
+        max-width: 550px;
+    }
+    
+    .modal-preview-image {
+        max-width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+        border-radius: 0.5rem;
+    }
+    
+    .loading-modal-content {
+        text-align: center;
+    }
+    
+    .spinner-large {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 1rem;
+        border: 4px solid #e2e8f0;
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .loading-steps {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .loading-steps .step {
+        text-align: center;
+        flex: 1;
+        opacity: 0.4;
+        transition: all 0.3s ease;
+    }
+    
+    .loading-steps .step.active {
+        opacity: 1;
+        color: var(--primary);
+    }
+    
+    .loading-steps .step.completed {
+        opacity: 1;
+        color: var(--success);
+    }
+    
+    .loading-steps .step i {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    .loading-steps .step span {
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .upload-container {
+            padding: 1rem;
+        }
+        
+        .upload-header h1 {
+            font-size: 1.75rem;
+        }
+        
+        .upload-header p {
+            font-size: 0.95rem;
+        }
+        
+        .upload-area {
+            padding: 2rem 1rem;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+        }
+        
+        .upload-content h3 {
+            font-size: 1.25rem;
+        }
+        
+        .tips-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .supported-fruits {
+            gap: 0.5rem;
+        }
+        
+        .fruit-badge {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.75rem;
+        }
+        
+        .loading-steps {
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .loading-steps .step {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-align: left;
+        }
+        
+        .loading-steps .step i {
+            margin-bottom: 0;
+        }
+    }
+    
+    /* Animation for file selection */
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+    
+    .file-selected {
+        animation: pulse 0.5s ease-out;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="upload-container">
+    <div class="upload-header">
+        <h1><i class="fas fa-camera"></i> Grade Your Fruit</h1>
+        <p>Upload a clear photo for instant AI-powered quality analysis</p>
+    </div>
+    
+    <div class="upload-area" id="upload-area">
+        <div class="upload-content">
+            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+            <h3>Drag & Drop Your Image</h3>
+            <p>or click to browse from your device</p>
+            <input type="file" id="file-input" accept="image/jpeg,image/png,image/jpg" hidden>
+            <button class="btn btn-primary" id="choose-file-btn">
+                <i class="fas fa-folder-open"></i> Choose File
+            </button>
+            <p class="file-info">
+                <i class="fas fa-info-circle"></i> Supports JPG, PNG (Max 16MB)
+            </p>
+        </div>
+    </div>
+    
+    <!-- Supported Fruits -->
+    <div class="supported-fruits">
+        <div class="fruit-badge">
+            <i class="fas fa-apple-alt"></i> Apples
+        </div>
+        <div class="fruit-badge">
+            <i class="fas fa-lemon"></i> Mangoes
+        </div>
+        <div class="fruit-badge">
+            <i class="fas fa-orange"></i> Oranges
+        </div>
+    </div>
+    
+    <!-- Tips Section -->
+    <div class="tips-section">
+        <h3><i class="fas fa-lightbulb"></i> Tips for Best Results</h3>
+        <div class="tips-grid">
+            <div class="tip-card">
+                <i class="fas fa-camera"></i>
+                <span>Use good lighting</span>
+            </div>
+            <div class="tip-card">
+                <i class="fas fa-arrows-alt"></i>
+                <span>Center the fruit</span>
+            </div>
+            <div class="tip-card">
+                <i class="fas fa-eye"></i>
+                <span>Show visible side</span>
+            </div>
+            <div class="tip-card">
+                <i class="fas fa-chart-line"></i>
+                <span>High contrast helps</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="modal" style="display:none">
+        <div class="modal-content preview-modal-content">
+            <span class="close" id="close-modal-btn">&times;</span>
+            <div class="preview-modal-header">
+                <i class="fas fa-image"></i>
+                <h2>Preview Image</h2>
+                <p>Review your image before AI analysis</p>
+            </div>
+            <div class="preview-modal-body">
+                <img id="modal-preview-img" class="modal-preview-image" alt="Preview">
+            </div>
+            <div class="preview-modal-footer">
+                <button class="btn btn-secondary" id="change-image-btn">
+                    <i class="fas fa-arrow-left"></i> Change Image
+                </button>
+                <button class="btn btn-primary" id="confirm-upload-btn">
+                    <i class="fas fa-microchip"></i> Analyze with AI
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="modal" style="display:none">
+        <div class="modal-content loading-modal-content">
+            <div class="spinner-large"></div>
+            <h3>Analyzing Your Fruit</h3>
+            <p id="loading-text">Processing image...</p>
+            <div class="loading-steps">
+                <div class="step" id="step1">
+                    <i class="fas fa-image"></i>
+                    <span>Uploading</span>
+                </div>
+                <div class="step" id="step2">
+                    <i class="fas fa-microchip"></i>
+                    <span>AI Analysis</span>
+                </div>
+                <div class="step" id="step3">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Generating Result</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="result" class="result-container" style="display:none"></div>
+</div>
+
+<!-- Login Modal (for limit reached) -->
+<div id="login-modal" class="modal" style="display:none">
+    <div class="modal-content">
+        <span class="close" id="close-login-modal">&times;</span>
+        <i class="fas fa-exclamation-triangle modal-icon"></i>
+        <h2>Free Limit Reached</h2>
+        <p>You've used your 3 free predictions. Create an account for unlimited grading and to save your history!</p>
+        <div class="modal-buttons">
+            <a href="{{ url_for('auth.login_page') }}" class="btn btn-primary">Login</a>
+            <a href="{{ url_for('auth.register_page') }}" class="btn btn-secondary">Sign Up</a>
+        </div>
+    </div>
+</div>
+
+<!-- Save Prompt Modal -->
+<div id="save-modal" class="modal" style="display:none">
+    <div class="modal-content">
+        <i class="fas fa-save modal-icon"></i>
+        <h2>Save Your Result</h2>
+        <p>Create a free account to save this grading result and track your history!</p>
+        <div class="modal-buttons">
+            <a href="{{ url_for('auth.login_page') }}" class="btn btn-primary">Login</a>
+            <a href="{{ url_for('auth.register_page') }}" class="btn btn-secondary">Sign Up</a>
+        </div>
+        <button class="btn-link" id="save-later-btn">Maybe later</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing upload page...');
+    
+    // Global variables
+    let currentFile = null;
+    
+    // Get DOM elements
+    const fileInput = document.getElementById('file-input');
+    const chooseFileBtn = document.getElementById('choose-file-btn');
+    const uploadArea = document.getElementById('upload-area');
+    const previewModal = document.getElementById('preview-modal');
+    const modalPreviewImg = document.getElementById('modal-preview-img');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const changeImageBtn = document.getElementById('change-image-btn');
+    const confirmUploadBtn = document.getElementById('confirm-upload-btn');
+    const loadingModal = document.getElementById('loading-modal');
+    const loginModal = document.getElementById('login-modal');
+    const closeLoginModal = document.getElementById('close-login-modal');
+    const saveModal = document.getElementById('save-modal');
+    const saveLaterBtn = document.getElementById('save-later-btn');
+    
+    // Helper function to show modal with animation
+    function showModal(modal) {
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        }
+    }
+    
+    // Helper function to hide modal
+    function hideModal(modal) {
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+    }
+    
+    // Handle file selection with animation
+    function handleSelectedFile(file) {
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+        if (!validTypes.includes(file.type)) {
+            showError('Please upload a valid image file (JPG, JPEG, or PNG)');
+            return;
+        }
+        
+        // Validate file size (16MB)
+        const maxSize = 16 * 1024 * 1024;
+        if (file.size > maxSize) {
+            showError('File too large. Maximum size is 16MB');
+            return;
+        }
+        
+        currentFile = file;
+        
+        // Add selection animation
+        if (uploadArea) {
+            uploadArea.classList.add('file-selected');
+            setTimeout(() => {
+                uploadArea.classList.remove('file-selected');
+            }, 500);
+        }
+        
+        // Show preview modal
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if (modalPreviewImg && previewModal) {
+                modalPreviewImg.src = e.target.result;
+                modalPreviewImg.style.animation = 'scaleIn 0.3s ease-out';
+                showModal(previewModal);
+            }
+        };
+        reader.onerror = function(e) {
+            console.error('FileReader error:', e);
+            showError('Error reading file. Please try again.');
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    // Show error message
+    function showError(message) {
+        // You can use a toast notification here
+        alert(message);
+    }
+    
+    // Change image function
+    function changeImage() {
+        hideModal(previewModal);
+        currentFile = null;
+        if (fileInput) {
+            fileInput.value = '';
+        }
+    }
+    
+    // Update loading steps with animation
+    function updateLoadingStep(step) {
+        const steps = document.querySelectorAll('.loading-steps .step');
+        steps.forEach((s, i) => {
+            if (i < step) {
+                s.classList.add('completed');
+                s.classList.remove('active');
+            } else if (i === step) {
+                s.classList.add('active');
+                s.classList.remove('completed');
+            } else {
+                s.classList.remove('active', 'completed');
+            }
+        });
+    }
+    
+    // Confirm and upload with progress animation
+    async function confirmAndUpload() {
+        if (!currentFile) {
+            showError('No file selected. Please choose an image first.');
+            return;
+        }
+        
+        // Close preview modal
+        hideModal(previewModal);
+        
+        // Show loading modal with animation
+        showModal(loadingModal);
+        updateLoadingStep(0);
+        const loadingText = document.getElementById('loading-text');
+        
+        // Animate steps
+        setTimeout(() => {
+            if (loadingText) loadingText.textContent = 'Uploading your image...';
+        }, 0);
+        
+        setTimeout(() => {
+            updateLoadingStep(1);
+            if (loadingText) loadingText.textContent = 'AI is analyzing quality...';
+        }, 1500);
+        
+        setTimeout(() => {
+            updateLoadingStep(2);
+            if (loadingText) loadingText.textContent = 'Generating grade...';
+        }, 3000);
+        
+        // Upload file
+        const formData = new FormData();
+        formData.append('file', currentFile);
+        
+        try {
+            console.log('Uploading file to /predict...');
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            console.log('Response:', data);
+            
+            // Hide loading modal
+            hideModal(loadingModal);
+            
+            // Handle response with animation
+            if (data.limit_reached) {
+                showModal(loginModal);
+            } else if (data.error) {
+                showError('Error: ' + data.error);
+            } else if (data.success) {
+                // Store result
+                sessionStorage.setItem('gradingResult', JSON.stringify(data));
+                
+                // Store image as data URL
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    sessionStorage.setItem('gradingImage', e.target.result);
+                    // Add transition effect before redirect
+                    document.body.style.opacity = '0';
+                    setTimeout(() => {
+                        window.location.href = '/results';
+                    }, 300);
+                };
+                reader.readAsDataURL(currentFile);
+            } else {
+                showError('Unexpected response from server');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            hideModal(loadingModal);
+            showError('Upload failed: ' + error.message);
+        }
+    }
+    
+    // Event Listeners with click feedback
+    if (chooseFileBtn) {
+        chooseFileBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (fileInput) {
+                // Add click animation
+                this.style.transform = 'scale(0.95)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+                fileInput.click();
+            }
+        });
+    }
+    
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleSelectedFile(file);
+            }
+        });
+    }
+    
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', function() {
+            hideModal(previewModal);
+        });
+    }
+    
+    if (changeImageBtn) {
+        changeImageBtn.addEventListener('click', function(e) {
+            // Add click animation
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+            changeImage();
+        });
+    }
+    
+    if (confirmUploadBtn) {
+        confirmUploadBtn.addEventListener('click', function(e) {
+            // Add click animation
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = '';
+            }, 150);
+            confirmAndUpload();
+        });
+    }
+    
+    if (closeLoginModal) {
+        closeLoginModal.addEventListener('click', function() {
+            hideModal(loginModal);
+        });
+    }
+    
+    if (saveLaterBtn) {
+        saveLaterBtn.addEventListener('click', function() {
+            hideModal(saveModal);
+        });
+    }
+    
+    // Drag and drop functionality with visual feedback
+    if (uploadArea) {
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        
+        uploadArea.addEventListener('dragleave', function() {
+            uploadArea.classList.remove('drag-over');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                // Add drop animation
+                uploadArea.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                    uploadArea.style.transform = '';
+                }, 200);
+                handleSelectedFile(file);
+            }
+        });
+    }
+    
+    // Close modals when clicking outside
+    window.addEventListener('click', function(e) {
+        if (e.target === previewModal) {
+            hideModal(previewModal);
+        }
+        if (e.target === loadingModal) {
+            hideModal(loadingModal);
+        }
+        if (e.target === loginModal) {
+            hideModal(loginModal);
+        }
+        if (e.target === saveModal) {
+            hideModal(saveModal);
+        }
+    });
+    
+    // Add ripple effect to buttons
+    document.querySelectorAll('.btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            ripple.style.width = ripple.style.height = `${size}px`;
+            ripple.style.left = `${e.clientX - rect.left - size / 2}px`;
+            ripple.style.top = `${e.clientY - rect.top - size / 2}px`;
+            this.appendChild(ripple);
+            setTimeout(() => ripple.remove(), 600);
+        });
+    });
+    
+    // Add ripple styles
+    const rippleStyle = document.createElement('style');
+    rippleStyle.textContent = `
+        .btn {
+            position: relative;
+            overflow: hidden;
+        }
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(rippleStyle);
+    
+    console.log('Upload page initialized successfully');
+});
+</script>
+{% endblock %}

@@ -1,76 +1,919 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grading Result - Fruit Grading System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🍎 Grading Result</h1>
-            <a href="/" class="back-home">← Back to Home</a>
-        </header>
+{% extends "base.html" %}
+
+{% block title %}Result Details - FruitSight{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Result Page Specific Styles */
+    .result-page-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        animation: fadeInUp 0.6s ease-out;
+        overflow-x: hidden;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .result-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .result-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .result-header p {
+        color: rgba(255,255,255,0.9);
+        font-size: 1.1rem;
+    }
+    
+    /* Result Card */
+    .result-card {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.02);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: slideInUp 0.5s ease-out;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .result-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 30px -12px rgba(0,0,0,0.2);
+    }
+    
+    /* Result Header Section */
+    .result-header-section {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        padding: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .result-header-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: shimmerRotate 20s linear infinite;
+    }
+    
+    @keyframes shimmerRotate {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    
+    .fruit-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .fruit-info i {
+        font-size: 2.5rem;
+        filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+        animation: bounce 2s ease-in-out infinite;
+    }
+    
+    @keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+    
+    .fruit-type-text {
+        font-size: 1.8rem;
+        font-weight: 800;
+        text-transform: capitalize;
+        letter-spacing: -0.5px;
+    }
+    
+    .grade-badge-large {
+        font-size: 2.5rem;
+        font-weight: 800;
+        padding: 0.5rem 2rem;
+        border-radius: 3rem;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        position: relative;
+        z-index: 1;
+        animation: pulse 2s infinite;
+    }
+    
+    /* Result Body Section */
+    .result-body-section {
+        padding: 2rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+    }
+    
+    /* Image Container */
+    .result-image-container {
+        position: relative;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        background: #f8fafc;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+    
+    .result-image-container:hover {
+        transform: scale(1.02);
+    }
+    
+    .result-image-large {
+        width: 100%;
+        height: auto;
+        max-height: 350px;
+        object-fit: contain;
+        display: block;
+        transition: transform 0.5s ease;
+    }
+    
+    .result-image-container:hover .result-image-large {
+        transform: scale(1.05);
+    }
+    
+    /* Confidence Circle */
+    .confidence-circle-container {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .confidence-circle-container h3 {
+        color: var(--dark);
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .confidence-circle-container h3 i {
+        color: var(--primary);
+    }
+    
+    .confidence-circle-large {
+        width: 180px;
+        margin: 0 auto;
+        position: relative;
+    }
+    
+    .circular-chart {
+        width: 100%;
+        height: auto;
+        transform: rotate(-90deg);
+    }
+    
+    .circle-bg {
+        fill: none;
+        stroke: #e2e8f0;
+        stroke-width: 3.8;
+    }
+    
+    .circle {
+        fill: none;
+        stroke-width: 3.8;
+        stroke-linecap: round;
+        animation: progress 1.5s ease-out forwards;
+        transition: stroke-dasharray 0.5s ease;
+    }
+    
+    @keyframes progress {
+        0% {
+            stroke-dasharray: 0, 100;
+        }
+        100% {
+            stroke-dasharray: var(--percent, 0), 100;
+        }
+    }
+    
+    .percentage {
+        fill: var(--dark);
+        font-size: 0.5em;
+        text-anchor: middle;
+        font-weight: 800;
+        transform: rotate(90deg);
+        animation: fadeInScale 1s ease-out;
+    }
+    
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: rotate(90deg) scale(0.5);
+        }
+        to {
+            opacity: 1;
+            transform: rotate(90deg) scale(1);
+        }
+    }
+    
+    /* Grade Breakdown Section */
+    .grade-breakdown-section {
+        margin-top: 1rem;
+    }
+    
+    .grade-breakdown-section h3 {
+        color: var(--dark);
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .grade-breakdown-section h3 i {
+        color: var(--primary);
+    }
+    
+    #grade-breakdown-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .breakdown-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.5rem;
+        background: white;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        animation: slideInLeft 0.5s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    .breakdown-item:nth-child(1) { animation-delay: 0.1s; }
+    .breakdown-item:nth-child(2) { animation-delay: 0.2s; }
+    .breakdown-item:nth-child(3) { animation-delay: 0.3s; }
+    
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .breakdown-item:hover {
+        transform: translateX(5px);
+        background: #f8fafc;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .grade-label {
+        min-width: 100px;
+        text-align: center;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+    
+    .breakdown-item:hover .grade-label {
+        transform: scale(1.05);
+    }
+    
+    .breakdown-bar {
+        flex: 1;
+        height: 10px;
+        background: #e2e8f0;
+        border-radius: 5px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .breakdown-fill {
+        height: 100%;
+        border-radius: 5px;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .breakdown-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    .breakdown-score {
+        min-width: 50px;
+        text-align: right;
+        font-weight: 700;
+        color: var(--dark);
+    }
+    
+    /* Result Footer */
+    .result-footer-section {
+        padding: 1.5rem 2rem;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        text-align: center;
+    }
+    
+    .processing-time {
+        color: var(--gray);
+        font-size: 0.875rem;
+        margin-bottom: 1.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #f8fafc;
+        border-radius: 2rem;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .action-buttons .btn {
+        min-width: 180px;
+        transition: all 0.3s ease;
+    }
+    
+    .action-buttons .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .action-buttons .btn:active {
+        transform: translateY(0);
+    }
+    
+    /* Loading State */
+    .loading-result {
+        text-align: center;
+        padding: 4rem;
+        color: white;
+    }
+    
+    .spinner-large {
+        width: 60px;
+        height: 60px;
+        margin: 0 auto 1rem;
+        border: 4px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    /* Error State */
+    .error-result {
+        text-align: center;
+        padding: 4rem;
+        background: white;
+        border-radius: 1rem;
+    }
+    
+    .error-result i {
+        font-size: 4rem;
+        color: var(--danger);
+        margin-bottom: 1rem;
+    }
+    
+    /* Image Modal for Fullscreen View */
+    .image-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 3000;
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .image-modal.show {
+        display: flex;
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .image-modal img {
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+        animation: zoomIn 0.3s ease-out;
+    }
+    
+    @keyframes zoomIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .result-page-container {
+            padding: 1rem;
+        }
         
-        <div class="result-card">
-            <div class="result-header">
-                <div class="fruit-type">{{ fruit_type|title }}</div>
-                <div class="grade-badge grade-{{ grade|lower }}">Grade {{ grade }}</div>
+        .result-header h1 {
+            font-size: 1.75rem;
+        }
+        
+        .result-header-section {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+        
+        .fruit-info {
+            flex-direction: column;
+        }
+        
+        .fruit-type-text {
+            font-size: 1.5rem;
+        }
+        
+        .grade-badge-large {
+            font-size: 2rem;
+            padding: 0.35rem 1.5rem;
+        }
+        
+        .result-body-section {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+        
+        .confidence-circle-large {
+            width: 150px;
+        }
+        
+        .breakdown-item {
+            gap: 0.75rem;
+        }
+        
+        .grade-label {
+            min-width: 70px;
+            font-size: 0.875rem;
+        }
+        
+        .breakdown-score {
+            font-size: 0.875rem;
+        }
+        
+        .action-buttons .btn {
+            min-width: 140px;
+            font-size: 0.875rem;
+        }
+    }
+    
+    /* Print Styles */
+    @media print {
+        .action-buttons,
+        .result-header-section::before,
+        .result-image-container::before {
+            display: none;
+        }
+        
+        .result-card {
+            box-shadow: none;
+        }
+        
+        .result-header-section {
+            background: var(--primary);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-page-container">
+    <div class="result-header">
+        <h1><i class="fas fa-chart-simple"></i> Grading Result</h1>
+        <p>Detailed analysis of your fruit quality</p>
+    </div>
+    
+    <div class="result-card" id="result-card" style="display: none;">
+        <div class="result-header-section">
+            <div class="fruit-info">
+                <i class="fas fa-apple-alt" id="result-fruit-icon"></i>
+                <span id="result-fruit-type" class="fruit-type-text"></span>
+            </div>
+            <div class="grade-badge-large" id="result-grade-badge"></div>
+        </div>
+        
+        <div class="result-body-section">
+            <div class="result-image-container" id="result-image-container">
+                <img id="result-image" class="result-image-large" alt="Graded fruit">
+                <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.6); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; opacity: 0; transition: opacity 0.3s ease;">
+                    <i class="fas fa-search-plus"></i> Click to zoom
+                </div>
             </div>
             
-            <div class="result-body">
-                <div class="result-image-container">
-                    <img src="{{ image_url }}" alt="Fruit image" class="result-image-large">
+            <div class="result-details-section">
+                <div class="confidence-circle-container">
+                    <h3><i class="fas fa-chart-line"></i> Confidence Score</h3>
+                    <div class="confidence-circle-large">
+                        <svg viewBox="0 0 36 36" class="circular-chart">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" id="confidence-circle-path" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <text x="18" y="20.35" id="confidence-percent-text" class="percentage">0%</text>
+                        </svg>
+                    </div>
                 </div>
                 
-                <div class="result-stats">
-                    <div class="confidence-section">
-                        <h3>Confidence Score</h3>
-                        <div class="confidence-circle">
-                            <svg viewBox="0 0 36 36" class="circular-chart">
-                                <path class="circle-bg"
-                                    d="M18 2.0845
-                                    a 15.9155 15.9155 0 0 1 0 31.831
-                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                <path class="circle"
-                                    stroke-dasharray="{{ confidence_percent }}, 100"
-                                    d="M18 2.0845
-                                    a 15.9155 15.9155 0 0 1 0 31.831
-                                    a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                <text x="18" y="20.35" class="percentage">{{ "%.1f"|format(confidence * 100) }}%</text>
-                            </svg>
-                        </div>
-                    </div>
-                    
-                    <div class="grade-breakdown">
-                        <h3>Grade Breakdown</h3>
-                        {% for grade, score in grade_confidences.items() %}
-                        <div class="breakdown-item">
-                            <span class="grade-label grade-{{ grade|lower }}">Grade {{ grade }}</span>
-                            <div class="breakdown-bar">
-                                <div class="breakdown-fill" style="width: {{ score * 100 }}%"></div>
-                            </div>
-                            <span class="breakdown-score">{{ "%.1f"|format(score * 100) }}%</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            
-            <div class="result-footer">
-                <p class="processing-time">Processing time: {{ "%.3f"|format(processing_time) }} seconds</p>
-                <div class="action-buttons">
-                    <button onclick="location.href='/'" class="btn-primary">Grade Another</button>
-                    <button onclick="window.print()" class="btn-secondary">Print Result</button>
+                <div class="grade-breakdown-section">
+                    <h3><i class="fas fa-chart-pie"></i> Grade Breakdown</h3>
+                    <div id="grade-breakdown-list"></div>
                 </div>
             </div>
         </div>
         
-        <footer>
-            <p>Powered by Deep Learning | Fruit Grading System v1.0</p>
-        </footer>
+        <div class="result-footer-section">
+            <p class="processing-time" id="processing-time">
+                <i class="fas fa-clock"></i> Processing...
+            </p>
+            <div class="action-buttons">
+                <button onclick="location.href='/upload'" class="btn btn-secondary">
+                    <i class="fas fa-camera"></i> Grade Another
+                </button>
+                <button onclick="location.href='/history'" class="btn btn-primary">
+                    <i class="fas fa-history"></i> View History
+                </button>
+                <button onclick="window.print()" class="btn btn-outline">
+                    <i class="fas fa-print"></i> Print Result
+                </button>
+            </div>
+        </div>
     </div>
-</body>
-</html>
+    
+    <div class="loading-result" id="loading-result">
+        <div class="spinner-large"></div>
+        <p>Loading your grading result...</p>
+    </div>
+</div>
+
+<!-- Image Modal for Fullscreen View -->
+<div id="image-modal" class="image-modal" onclick="closeImageModal()">
+    <img id="modal-image" alt="Full size fruit image">
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const gradeColors = { 'A': '#10b981', 'B': '#f59e0b', 'C': '#ef4444' };
+const gradeGradients = {
+    'A': 'linear-gradient(135deg, #10b981, #059669)',
+    'B': 'linear-gradient(135deg, #f59e0b, #d97706)',
+    'C': 'linear-gradient(135deg, #ef4444, #dc2626)'
+};
+const fruitIcons = { 
+    'apple': 'apple-alt',
+    'apples': 'apple-alt', 
+    'mango': 'lemon',
+    'mangos': 'lemon', 
+    'orange': 'orange',
+    'oranges': 'orange',
+    'banana': 'banana',
+    'bananas': 'banana'
+};
+
+let currentImageSrc = '';
+
+async function loadResult() {
+    const predictionId = sessionStorage.getItem('viewPredictionId') || 
+                         new URLSearchParams(window.location.search).get('id');
+    
+    console.log('Loading prediction ID:', predictionId);
+    
+    if (!predictionId) {
+        console.log('No prediction ID found, redirecting to history');
+        window.location.href = '/history';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/prediction/${predictionId}`);
+        const data = await response.json();
+        
+        console.log('API Response:', data);
+        
+        if (data.success && data.prediction) {
+            // Hide loading, show result
+            document.getElementById('loading-result').style.display = 'none';
+            document.getElementById('result-card').style.display = 'block';
+            displayResult(data.prediction);
+        } else {
+            console.error('Failed to load prediction:', data);
+            showError('Prediction not found. It may have been deleted.');
+        }
+    } catch (error) {
+        console.error('Error loading result:', error);
+        showError('Failed to load result. Please check your connection.');
+    }
+}
+
+function showError(message) {
+    document.getElementById('loading-result').innerHTML = `
+        <div class="error-result">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Unable to Load Result</h3>
+            <p>${message}</p>
+            <button onclick="location.href='/history'" class="btn btn-primary" style="margin-top: 1rem;">
+                <i class="fas fa-history"></i> Back to History
+            </button>
+        </div>
+    `;
+}
+
+function displayResult(p) {
+    console.log('Displaying result:', p);
+    
+    // Fruit type and icon
+    const fruitTypeElement = document.getElementById('result-fruit-type');
+    if (fruitTypeElement) {
+        fruitTypeElement.textContent = p.fruit_type.charAt(0).toUpperCase() + p.fruit_type.slice(1);
+        fruitTypeElement.style.animation = 'fadeInUp 0.5s ease-out';
+    }
+    
+    const iconElement = document.getElementById('result-fruit-icon');
+    if (iconElement) {
+        iconElement.className = `fas fa-${fruitIcons[p.fruit_type] || 'apple-alt'}`;
+    }
+    
+    // Grade badge
+    const gradeBadge = document.getElementById('result-grade-badge');
+    if (gradeBadge) {
+        gradeBadge.textContent = `Grade ${p.grade}`;
+        gradeBadge.style.background = gradeGradients[p.grade];
+        gradeBadge.style.animation = 'pulse 2s infinite';
+    }
+    
+    // Confidence circle
+    const percent = Math.round(p.confidence * 100);
+    const circlePath = document.getElementById('confidence-circle-path');
+    if (circlePath) {
+        circlePath.setAttribute('stroke-dasharray', `${percent}, 100`);
+        circlePath.style.stroke = gradeColors[p.grade];
+        // Set CSS variable for animation
+        circlePath.style.setProperty('--percent', `${percent}`);
+    }
+    
+    const percentText = document.getElementById('confidence-percent-text');
+    if (percentText) {
+        // Animate counter for percentage
+        let currentPercent = 0;
+        const interval = setInterval(() => {
+            if (currentPercent >= percent) {
+                clearInterval(interval);
+                percentText.textContent = `${percent}%`;
+            } else {
+                currentPercent++;
+                percentText.textContent = `${currentPercent}%`;
+            }
+        }, 20);
+    }
+    
+    // Display image with zoom capability
+    const resultImage = document.getElementById('result-image');
+    const imageContainer = document.getElementById('result-image-container');
+    
+    if (resultImage) {
+        if (p.image_data && p.image_data.length > 0) {
+            // Check if it's already a data URL or raw base64
+            if (p.image_data.startsWith('data:image')) {
+                currentImageSrc = p.image_data;
+                resultImage.src = p.image_data;
+            } else {
+                currentImageSrc = `data:image/jpeg;base64,${p.image_data}`;
+                resultImage.src = currentImageSrc;
+            }
+            resultImage.style.display = 'block';
+            console.log('Image set successfully');
+            
+            // Add fade-in animation
+            resultImage.style.animation = 'fadeInUp 0.5s ease-out';
+            
+            // Add zoom functionality
+            imageContainer.style.cursor = 'pointer';
+            imageContainer.onclick = function(e) {
+                e.stopPropagation();
+                showImageModal(currentImageSrc);
+            };
+            
+            // Show zoom hint on hover
+            imageContainer.addEventListener('mouseenter', () => {
+                const hint = imageContainer.querySelector('div');
+                if (hint) hint.style.opacity = '1';
+            });
+            
+            imageContainer.addEventListener('mouseleave', () => {
+                const hint = imageContainer.querySelector('div');
+                if (hint) hint.style.opacity = '0';
+            });
+            
+            // Handle image load error
+            resultImage.onerror = function() {
+                console.error('Failed to load image');
+                resultImage.src = '/static/images/placeholder.png';
+                resultImage.style.display = 'block';
+                resultImage.style.opacity = '0.5';
+            };
+        } else {
+            console.warn('No image data available');
+            resultImage.src = '/static/images/placeholder.png';
+            resultImage.style.display = 'block';
+            resultImage.style.opacity = '0.5';
+            imageContainer.style.cursor = 'default';
+        }
+    }
+    
+    // Grade breakdown with staggered animation
+    const breakdownList = document.getElementById('grade-breakdown-list');
+    if (breakdownList) {
+        breakdownList.innerHTML = '';
+        
+        const gradeConfidences = p.grade_confidences || {};
+        console.log('Grade confidences:', gradeConfidences);
+        
+        const grades = ['A', 'B', 'C'];
+        grades.forEach((grade, index) => {
+            const score = gradeConfidences[grade] || 0;
+            const percentScore = Math.round(score * 100);
+            
+            const breakdownItem = document.createElement('div');
+            breakdownItem.className = 'breakdown-item';
+            breakdownItem.style.animationDelay = `${index * 0.1}s`;
+            breakdownItem.innerHTML = `
+                <span class="grade-label" style="background: ${gradeGradients[grade]}; color: white; padding: 0.35rem 1rem; border-radius: 2rem; min-width: 90px; text-align: center; font-weight: 700;">
+                    Grade ${grade}
+                </span>
+                <div class="breakdown-bar">
+                    <div class="breakdown-fill" style="width: 0%; background: ${gradeColors[grade]}"></div>
+                </div>
+                <span class="breakdown-score" style="min-width: 50px; text-align: right; font-weight: 700;">
+                    ${percentScore}%
+                </span>
+            `;
+            breakdownList.appendChild(breakdownItem);
+            
+            // Animate the bar width
+            setTimeout(() => {
+                const fill = breakdownItem.querySelector('.breakdown-fill');
+                if (fill) {
+                    fill.style.width = `${percentScore}%`;
+                }
+            }, 100 + (index * 100));
+        });
+    }
+    
+    // Processing time / date
+    const timeElement = document.getElementById('processing-time');
+    if (timeElement) {
+        const date = new Date(p.created_at);
+        const formattedDate = date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        timeElement.innerHTML = `<i class="fas fa-calendar-check"></i> Graded on: ${formattedDate}`;
+        timeElement.style.animation = 'fadeInUp 0.5s ease-out';
+    }
+    
+    console.log('Result display complete');
+}
+
+function showImageModal(imageSrc) {
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-image');
+    modalImg.src = imageSrc;
+    modal.classList.add('show');
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('image-modal');
+    modal.classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+// Close image modal with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeImageModal();
+    }
+});
+
+// Add confetti effect for high confidence results (optional)
+function showConfetti(grade, confidence) {
+    if (grade === 'A' && confidence > 0.9) {
+        // Simple confetti effect for excellent results
+        const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444'];
+        for (let i = 0; i < 50; i++) {
+            const confetti = document.createElement('div');
+            confetti.style.position = 'fixed';
+            confetti.style.width = '10px';
+            confetti.style.height = '10px';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.left = Math.random() * window.innerWidth + 'px';
+            confetti.style.top = '-10px';
+            confetti.style.borderRadius = '50%';
+            confetti.style.pointerEvents = 'none';
+            confetti.style.zIndex = '9999';
+            confetti.style.animation = `fall ${Math.random() * 2 + 2}s linear forwards`;
+            document.body.appendChild(confetti);
+            
+            setTimeout(() => {
+                confetti.remove();
+            }, 3000);
+        }
+    }
+}
+
+// Add CSS for confetti
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fall {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+// Load result and optionally show confetti
+loadResult().then(() => {
+    const p = JSON.parse(sessionStorage.getItem('lastResult'));
+    if (p) {
+        showConfetti(p.grade, p.confidence);
+    }
+});
+</script>
+{% endblock %}

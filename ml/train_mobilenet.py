@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simplified CNN Training Script for Small Dataset
+MobileNetV2 Transfer Learning for Fruit Grading
 """
 
 import sys
@@ -35,37 +35,29 @@ def load_data():
     
     return train_df, val_df, test_df
 
-def create_dataset(dataframe, batch_size=16, target_size=(128, 128), shuffle=True, augment=False):
-    """Create TensorFlow dataset with optional augmentation"""
+def create_dataset(dataframe, batch_size=32, target_size=(224, 224), shuffle=True, augment=False):
+    """Create TensorFlow dataset"""
     
     def load_and_preprocess(image_path, fruit_idx, grade_idx):
-        # Load and decode image
         image = tf.io.read_file(image_path)
         image = tf.image.decode_jpeg(image, channels=3)
         image = tf.image.resize(image, target_size)
         image = tf.cast(image, tf.float32) / 255.0
         
-        # Data augmentation for training
         if augment:
-            # Random flip
             image = tf.image.random_flip_left_right(image)
-            # Random brightness
             image = tf.image.random_brightness(image, max_delta=0.2)
-            # Random contrast
             image = tf.image.random_contrast(image, lower=0.8, upper=1.2)
         
-        # Create combined label (fruit * 3 + grade)
         combined_label = fruit_idx * 3 + grade_idx
         label = tf.one_hot(combined_label, depth=12)
         
         return image, label
     
-    # Extract data
     image_paths = dataframe['image_path'].values
     fruit_labels = dataframe['fruit_idx'].values
     grade_labels = dataframe['grade_idx'].values
     
-    # Create dataset
     dataset = tf.data.Dataset.from_tensor_slices((image_paths, fruit_labels, grade_labels))
     dataset = dataset.map(load_and_preprocess, num_parallel_calls=tf.data.AUTOTUNE)
     
@@ -77,43 +69,37 @@ def create_dataset(dataframe, batch_size=16, target_size=(128, 128), shuffle=Tru
     
     return dataset
 
-def create_simple_cnn():
-    """Create a simple CNN model suitable for small datasets"""
+def create_mobilenet_model():
+    """Create MobileNetV2 model with transfer learning"""
     
-    model = keras.Sequential([
-        # First Conv Block
-        keras.layers.Conv2D(32, (3, 3), activation='relu', input_shape=(128, 128, 3)),
-        keras.layers.MaxPooling2D((2, 2)),
-        keras.layers.BatchNormalization(),
-        
-        # Second Conv Block
-        keras.layers.Conv2D(64, (3, 3), activation='relu'),
-        keras.layers.MaxPooling2D((2, 2)),
-        keras.layers.BatchNormalization(),
-        
-        # Third Conv Block
-        keras.layers.Conv2D(128, (3, 3), activation='relu'),
-        keras.layers.MaxPooling2D((2, 2)),
-        keras.layers.BatchNormalization(),
-        
-        # Fourth Conv Block
-        keras.layers.Conv2D(256, (3, 3), activation='relu'),
-        keras.layers.GlobalAveragePooling2D(),
-        
-        # Dense Layers
-        keras.layers.Dropout(0.5),
-        keras.layers.Dense(128, activation='relu'),
-        keras.layers.BatchNormalization(),
-        keras.layers.Dropout(0.3),
-        keras.layers.Dense(12, activation='softmax')
+    # Load pre-trained MobileNetV2
+    base_model = tf.keras.applications.MobileNetV2(
+        weights='imagenet',
+        include_top=False,
+        input_shape=(224, 224, 3)
+    )
+    base_model.trainable = False  # Freeze base layers
+    
+    # Add custom classification head
+    model = tf.keras.Sequential([
+        base_model,
+        tf.keras.layers.GlobalAveragePooling2D(),
+        tf.keras.layers.Dropout(0.3),
+        tf.keras.layers.Dense(256, activation='relu'),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(0.3),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.Dense(12, activation='softmax')
     ])
     
-    return model
+    return model, base_model
 
 def main():
     """Main training function"""
     print("=" * 60)
-    print("🍎 Fruit Grading System - Simple CNN Training")
+    print("🍎 Fruit Grading System - MobileNetV2 Training")
     print("=" * 60)
     print(f"Start Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
@@ -121,46 +107,50 @@ def main():
     train_df, val_df, test_df = load_data()
     
     # Configuration
-    BATCH_SIZE = 16
-    EPOCHS = 50
+    BATCH_SIZE = 32
+    EPOCHS = 30
     LEARNING_RATE = 0.001
     
     print(f"\n⚙️ Training Configuration:")
+    print(f"  Model: MobileNetV2 (Transfer Learning)")
     print(f"  Batch Size: {BATCH_SIZE}")
     print(f"  Epochs: {EPOCHS}")
     print(f"  Learning Rate: {LEARNING_RATE}")
-    print(f"  Image Size: 128x128")
     
     # Create datasets
     print("\n📁 Creating datasets...")
-    train_dataset = create_dataset(train_df, BATCH_SIZE, (128, 128), shuffle=True, augment=True)
-    val_dataset = create_dataset(val_df, BATCH_SIZE, (128, 128), shuffle=False, augment=False)
-    test_dataset = create_dataset(test_df, BATCH_SIZE, (128, 128), shuffle=False, augment=False)
+    train_dataset = create_dataset(train_df, BATCH_SIZE, (224, 224), shuffle=True, augment=True)
+    val_dataset = create_dataset(val_df, BATCH_SIZE, (224, 224), shuffle=False, augment=False)
+    test_dataset = create_dataset(test_df, BATCH_SIZE, (224, 224), shuffle=False, augment=False)
     
     # Create model
-    print("\n🏗️ Building Simple CNN model...")
-    model = create_simple_cnn()
+    print("\n🏗️ Building MobileNetV2 model...")
+    model, base_model = create_mobilenet_model()
     
     # Compile model
     model.compile(
-        optimizer=keras.optimizers.Adam(learning_rate=LEARNING_RATE),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE),
         loss='categorical_crossentropy',
         metrics=['accuracy']
     )
     
     # Print model summary
-    model.summary()
+    total_params = model.count_params()
+    trainable_params = sum([tf.keras.backend.count_params(w) for w in model.trainable_weights])
+    print(f"\n📐 Model Parameters:")
+    print(f"  Total: {total_params:,}")
+    print(f"  Trainable: {trainable_params:,}")
     
     # Callbacks
     callbacks = [
         keras.callbacks.EarlyStopping(
             monitor='val_accuracy',
-            patience=15,
+            patience=12,
             restore_best_weights=True,
             verbose=1
         ),
         keras.callbacks.ModelCheckpoint(
-            filepath='ml/models/fruit_grading_simple_cnn.keras',
+            filepath='ml/models/fruit_grading_mobilenet.keras',
             monitor='val_accuracy',
             save_best_only=True,
             verbose=1
@@ -168,7 +158,7 @@ def main():
         keras.callbacks.ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.5,
-            patience=8,
+            patience=6,
             min_lr=1e-6,
             verbose=1
         )
@@ -197,47 +187,45 @@ def main():
     print(f"Test Loss: {test_loss:.4f}")
     
     # Plot training history
-    plt.figure(figsize=(12, 4))
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
-    plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='Train Accuracy')
-    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-    plt.title('Model Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    axes[0].plot(history.history['accuracy'], label='Train Accuracy', linewidth=2)
+    axes[0].plot(history.history['val_accuracy'], label='Validation Accuracy', linewidth=2)
+    axes[0].set_title('MobileNetV2 - Model Accuracy', fontsize=14, fontweight='bold')
+    axes[0].set_xlabel('Epoch')
+    axes[0].set_ylabel('Accuracy')
+    axes[0].legend()
+    axes[0].grid(True, alpha=0.3)
     
-    plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='Train Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.title('Model Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    axes[1].plot(history.history['loss'], label='Train Loss', linewidth=2)
+    axes[1].plot(history.history['val_loss'], label='Validation Loss', linewidth=2)
+    axes[1].set_title('MobileNetV2 - Model Loss', fontsize=14, fontweight='bold')
+    axes[1].set_xlabel('Epoch')
+    axes[1].set_ylabel('Loss')
+    axes[1].legend()
+    axes[1].grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('ml/outputs/training_curves_simple.png', dpi=150)
+    plt.savefig('ml/outputs/training_curves_mobilenet.png', dpi=150)
     plt.show()
     
     # Save results
     results = {
-        'model_type': 'SimpleCNN',
+        'model': 'MobileNetV2',
         'test_accuracy': float(test_acc),
         'test_loss': float(test_loss),
-        'training_epochs': len(history.history['accuracy']),
-        'best_val_accuracy': float(max(history.history['val_accuracy']))
+        'best_val_accuracy': float(max(history.history['val_accuracy'])),
+        'training_epochs': len(history.history['accuracy'])
     }
     
-    with open('ml/outputs/training_results.json', 'w') as f:
+    with open('ml/outputs/mobilenet_results.json', 'w') as f:
         json.dump(results, f, indent=2)
     
     print("\n" + "=" * 60)
-    print("✅ Training Complete!")
+    print("✅ MobileNetV2 Training Complete!")
     print("=" * 60)
-    print(f"\n📁 Model saved to: ml/models/fruit_grading_simple_cnn.h5")
-    print(f"📈 Final Test Accuracy: {test_acc*100:.2f}%")
+    print(f"\n📁 Model saved to: ml/models/fruit_grading_mobilenet.h5")
+    print(f"📈 Test Accuracy: {test_acc*100:.2f}%")
     print(f"🏆 Best Validation Accuracy: {max(history.history['val_accuracy'])*100:.2f}%")
     
     return model, history

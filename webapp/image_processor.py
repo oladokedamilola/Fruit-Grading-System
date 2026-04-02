@@ -19,17 +19,18 @@ class ImageProcessor:
         self.target_size = (224, 224)
         self.last_processing_time = 0
         
-        # Class mappings
-        self.fruit_types = ['apple', 'mango', 'orange', 'tomato']
+        # Class mappings - UPDATED to match your actual dataset (apples, mangos, oranges)
+        self.fruit_types = ['apples', 'mangos', 'oranges']
         self.grades = ['A', 'B', 'C']
         
-        # Create class names mapping (12 total classes)
+        # Create class names mapping (9 total classes: 3 fruits × 3 grades)
         self.class_names = []
         for fruit in self.fruit_types:
             for grade in self.grades:
-                self.class_names.append(f"{fruit}_grade_{grade}")
+                self.class_names.append(f"{fruit}_{grade}")
         
         logger.info(f"ImageProcessor initialized with {len(self.class_names)} classes")
+        logger.info(f"Class names: {self.class_names}")
     
     def preprocess(self, image_path):
         """
@@ -111,12 +112,6 @@ class ImageProcessor:
     def get_prediction_result(self, predictions):
         """
         Convert model predictions to human-readable result
-        
-        Args:
-            predictions: Model output (1, 12)
-        
-        Returns:
-            Dictionary with grade and confidence scores
         """
         # Get prediction for first batch
         pred = predictions[0]
@@ -127,30 +122,46 @@ class ImageProcessor:
         
         # Get class name
         class_name = self.class_names[predicted_class]
+        logger.debug(f"Predicted class: {class_name}, confidence: {confidence:.4f}")
         
-        # Parse class name
-        fruit_type, _, grade = class_name.split('_')
+        # Parse class name - format: "fruit_grade" (e.g., "apples_A")
+        parts = class_name.split('_')
+        if len(parts) >= 2:
+            fruit_type = parts[0]
+            grade = parts[1]
+        else:
+            fruit_type = "apples"
+            grade = "C"
         
-        # Get confidence scores for all grades
-        confidence_scores = {}
-        for fruit in self.fruit_types:
-            for grade in self.grades:
-                class_idx = self.class_names.index(f"{fruit}_grade_{grade}")
-                confidence_scores[f"{fruit}_{grade}"] = float(pred[class_idx])
-        
-        # Get grade-specific confidence (for this fruit)
+        # Get confidence scores for all grades (A, B, C) for the detected fruit
         grade_confidences = {}
-        for grade in self.grades:
-            class_idx = self.class_names.index(f"{fruit_type}_grade_{grade}")
-            grade_confidences[grade] = float(pred[class_idx])
+        for grade_letter in ['A', 'B', 'C']:
+            try:
+                class_idx = self.class_names.index(f"{fruit_type}_{grade_letter}")
+                grade_confidences[grade_letter] = float(pred[class_idx])
+            except ValueError:
+                grade_confidences[grade_letter] = 0.0
+        
+        # Get confidence scores for all fruits (for debugging/display)
+        all_confidence_scores = {}
+        for fruit in self.fruit_types:
+            for grade_letter in ['A', 'B', 'C']:
+                try:
+                    class_idx = self.class_names.index(f"{fruit}_{grade_letter}")
+                    all_confidence_scores[f"{fruit}_{grade_letter}"] = float(pred[class_idx])
+                except ValueError:
+                    all_confidence_scores[f"{fruit}_{grade_letter}"] = 0.0
+        
+        logger.info(f"Prediction result: {fruit_type} - Grade {grade} ({confidence:.2%})")
+        logger.debug(f"Grade confidences: {grade_confidences}")
         
         return {
             'success': True,
             'fruit_type': fruit_type,
             'grade': grade,
             'confidence': confidence,
-            'confidence_scores': confidence_scores,
             'grade_confidences': grade_confidences,
+            'confidence_scores': all_confidence_scores,
             'processing_time': self.last_processing_time
         }
     
@@ -159,7 +170,7 @@ class ImageProcessor:
         Get top k predictions
         
         Args:
-            predictions: Model output (1, 12)
+            predictions: Model output (1, 9)
             k: Number of top predictions to return
         
         Returns:
@@ -182,7 +193,7 @@ class ImageProcessor:
         Generate data for confidence visualization
         
         Args:
-            predictions: Model output (1, 12)
+            predictions: Model output (1, 9)
         
         Returns:
             Dictionary with visualization data
@@ -193,8 +204,37 @@ class ImageProcessor:
         for fruit in self.fruit_types:
             fruit_scores = []
             for grade in self.grades:
-                class_idx = self.class_names.index(f"{fruit}_grade_{grade}")
+                class_idx = self.class_names.index(f"{fruit}_{grade}")
                 fruit_scores.append(float(pred[class_idx]))
             viz_data[fruit] = fruit_scores
         
         return viz_data
+    
+    def get_fruit_prediction_summary(self, predictions):
+        """
+        Get summary of predictions by fruit type
+        
+        Args:
+            predictions: Model output (1, 9)
+        
+        Returns:
+            Dictionary with fruit-wise best grades
+        """
+        pred = predictions[0]
+        
+        fruit_summary = {}
+        for fruit in self.fruit_types:
+            best_confidence = 0
+            best_grade = None
+            for grade in self.grades:
+                class_idx = self.class_names.index(f"{fruit}_{grade}")
+                conf = float(pred[class_idx])
+                if conf > best_confidence:
+                    best_confidence = conf
+                    best_grade = grade
+            fruit_summary[fruit] = {
+                'grade': best_grade,
+                'confidence': best_confidence
+            }
+        
+        return fruit_summary

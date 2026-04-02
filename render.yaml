@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: fruitsight
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: |
+      pip install -r requirements.txt
+      python -c "from webapp.app import app, db; app.app_context().push(); db.create_all()"
+    startCommand: gunicorn webapp.app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.1
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: MODEL_PATH
+        value: ml/models/fruit_grading_simple_cnn.keras
+      - key: UPLOAD_FOLDER
+        value: /tmp/uploads
+      - key: ANONYMOUS_LIMIT
+        value: 3

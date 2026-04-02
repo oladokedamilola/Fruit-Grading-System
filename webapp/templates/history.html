@@ -1,0 +1,998 @@
+{% extends "base.html" %}
+
+{% block title %}History - FruitSight{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* History Page Specific Styles */
+    .history-page-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        animation: fadeInUp 0.6s ease-out;
+        overflow-x: hidden;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .history-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .history-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .history-header p {
+        color: rgba(255,255,255,0.9);
+        font-size: 1.1rem;
+    }
+    
+    /* Filters Section */
+    .filters-section {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: flex-end;
+        transition: all 0.3s ease;
+    }
+    
+    .filters-section:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+    }
+    
+    .filter-group {
+        flex: 1;
+        min-width: 150px;
+    }
+    
+    .filter-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        font-size: 0.875rem;
+        color: white;
+    }
+    
+    .filter-group label i {
+        margin-right: 0.5rem;
+    }
+    
+    .filter-select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 0.5rem;
+        background: white;
+        font-size: 0.875rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .filter-select:hover {
+        border-color: var(--primary);
+        transform: translateY(-1px);
+    }
+    
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    }
+    
+    .btn-sm {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Results Count */
+    .results-count {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        color: white;
+        font-size: 0.875rem;
+        text-align: center;
+        backdrop-filter: blur(5px);
+    }
+    
+    /* History Grid */
+    .history-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .history-card {
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        position: relative;
+        animation: fadeInUp 0.5s ease-out;
+    }
+    
+    .history-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--primary), var(--secondary));
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+        z-index: 1;
+    }
+    
+    .history-card:hover::before {
+        transform: scaleX(1);
+    }
+    
+    .history-card:hover {
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.15), 0 10px 10px -5px rgba(0,0,0,0.02);
+    }
+    
+    .history-card:active {
+        transform: translateY(-4px) scale(0.99);
+    }
+    
+    .history-card-header {
+        padding: 1rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e2e8f0;
+        background: linear-gradient(135deg, #f8fafc, #ffffff);
+    }
+    
+    .history-fruit-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--dark);
+    }
+    
+    .history-fruit-info i {
+        font-size: 1.25rem;
+        color: var(--primary);
+        transition: transform 0.3s ease;
+    }
+    
+    .history-card:hover .history-fruit-info i {
+        transform: scale(1.1);
+    }
+    
+    .history-fruit-name {
+        text-transform: capitalize;
+    }
+    
+    .history-grade-badge {
+        padding: 0.35rem 1rem;
+        border-radius: 2rem;
+        font-weight: 700;
+        font-size: 0.875rem;
+        color: white;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.85;
+        }
+    }
+    
+    /* History Card Image */
+    .history-card-image {
+        height: 200px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+        position: relative;
+    }
+    
+    .history-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .history-card:hover .history-thumbnail {
+        transform: scale(1.05);
+    }
+    
+    .history-no-image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        color: #cbd5e1;
+        font-size: 3rem;
+        background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    }
+    
+    .history-card-body {
+        padding: 1.25rem;
+    }
+    
+    /* Confidence Section */
+    .history-confidence {
+        margin-bottom: 1rem;
+    }
+    
+    .confidence-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-bottom: 0.25rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .confidence-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        background: linear-gradient(135deg, var(--dark), var(--gray));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+    }
+    
+    .confidence-bar {
+        background: #e2e8f0;
+        border-radius: 1rem;
+        height: 8px;
+        overflow: hidden;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        border-radius: 1rem;
+        transition: width 1s ease-out;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .confidence-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    /* Breakdown Section */
+    .history-breakdown {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .breakdown-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .breakdown-mini {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .breakdown-grade-a { 
+        color: #10b981;
+        transition: all 0.3s ease;
+    }
+    
+    .breakdown-grade-a:hover { 
+        transform: scale(1.05);
+        text-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+    }
+    
+    .breakdown-grade-b { 
+        color: #f59e0b;
+        transition: all 0.3s ease;
+    }
+    
+    .breakdown-grade-b:hover { 
+        transform: scale(1.05);
+        text-shadow: 0 0 5px rgba(245, 158, 11, 0.5);
+    }
+    
+    .breakdown-grade-c { 
+        color: #ef4444;
+        transition: all 0.3s ease;
+    }
+    
+    .breakdown-grade-c:hover { 
+        transform: scale(1.05);
+        text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+    }
+    
+    .history-card-footer {
+        padding: 0.75rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.75rem;
+        color: #64748b;
+        background: #f8fafc;
+    }
+    
+    .history-date i {
+        margin-right: 0.25rem;
+    }
+    
+    .btn-view-card {
+        background: none;
+        border: none;
+        color: var(--primary);
+        cursor: pointer;
+        font-weight: 700;
+        transition: all 0.3s ease;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-view-card:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateX(5px);
+    }
+    
+    /* Pagination */
+    .pagination-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+        animation: fadeInUp 0.5s ease-out;
+    }
+    
+    .pagination {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .page-btn {
+        padding: 0.6rem 1rem;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        backdrop-filter: blur(5px);
+    }
+    
+    .page-btn:hover {
+        background: var(--primary);
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    
+    .page-btn:active {
+        transform: translateY(0);
+    }
+    
+    .page-btn.active {
+        background: var(--primary);
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+    
+    .page-dots {
+        padding: 0.6rem 0.5rem;
+        color: white;
+    }
+    
+    /* Loading and Empty States */
+    .loading-history, .empty-state, .error-state {
+        text-align: center;
+        padding: 4rem;
+        color: white;
+    }
+    
+    .empty-state i, .error-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+    
+    .empty-state p, .error-state p {
+        margin-bottom: 1.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .spinner {
+        width: 50px;
+        height: 50px;
+        margin: 0 auto 1rem;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Modal Styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(10px);
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    
+    .modal.show {
+        display: flex !important;
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: 1rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        animation: modalSlideIn 0.3s ease-out;
+    }
+    
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-50px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    .modal-content .close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--gray);
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s;
+        background: white;
+        z-index: 10;
+    }
+    
+    .modal-content .close:hover {
+        background: var(--light);
+        color: var(--dark);
+        transform: scale(1.1);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .history-page-container {
+            padding: 1rem;
+        }
+        
+        .history-header h1 {
+            font-size: 1.75rem;
+        }
+        
+        .filters-section {
+            flex-direction: column;
+            padding: 1rem;
+        }
+        
+        .filter-group {
+            width: 100%;
+        }
+        
+        .history-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .history-card-image {
+            height: 180px;
+        }
+        
+        .breakdown-mini {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .pagination {
+            gap: 0.35rem;
+        }
+        
+        .page-btn {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.875rem;
+        }
+    }
+    
+    /* Scroll to top button */
+    .scroll-top {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: var(--primary);
+        color: white;
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 1000;
+    }
+    
+    .scroll-top.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .scroll-top:hover {
+        transform: translateY(-5px);
+        background: var(--primary-dark);
+        box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+    
+    .scroll-top:active {
+        transform: translateY(0);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="history-page-container">
+    <div class="history-header">
+        <h1><i class="fas fa-history"></i> Grading History</h1>
+        <p>View and analyze all your fruit grading results</p>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters-section">
+        <div class="filter-group">
+            <label><i class="fas fa-filter"></i> Filter by Grade</label>
+            <select id="filter-grade" class="filter-select">
+                <option value="all">All Grades</option>
+                <option value="A">Grade A</option>
+                <option value="B">Grade B</option>
+                <option value="C">Grade C</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fas fa-apple-alt"></i> Filter by Fruit</label>
+            <select id="filter-fruit" class="filter-select">
+                <option value="all">All Fruits</option>
+                <option value="apples">Apples</option>
+                <option value="mangos">Mangoes</option>
+                <option value="oranges">Oranges</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label><i class="fas fa-calendar"></i> Sort by Date</label>
+            <select id="sort-order" class="filter-select">
+                <option value="desc">Newest First</option>
+                <option value="asc">Oldest First</option>
+            </select>
+        </div>
+        <button id="apply-filters" class="btn btn-primary btn-sm">
+            <i class="fas fa-search"></i> Apply Filters
+        </button>
+        <button id="reset-filters" class="btn btn-secondary btn-sm">
+            <i class="fas fa-undo-alt"></i> Reset
+        </button>
+    </div>
+    
+    <!-- Results Count -->
+    <div class="results-count" id="results-count"></div>
+    
+    <!-- History Grid -->
+    <div id="history-grid" class="history-grid">
+        <div class="loading-history">
+            <div class="spinner"></div>
+            <p>Loading your history...</p>
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    <div class="pagination-container" id="pagination-container"></div>
+</div>
+
+<!-- Scroll to Top Button -->
+<div class="scroll-top" id="scrollTop">
+    <i class="fas fa-arrow-up"></i>
+</div>
+
+<!-- View Modal -->
+<div id="view-modal" class="modal" style="display:none">
+    <div class="modal-content modal-lg">
+        <span class="close" onclick="closeViewModal()">&times;</span>
+        <div id="modal-content-inner"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let currentPage = 1;
+let totalPages = 1;
+let currentFilters = { grade: 'all', fruit: 'all', sort: 'desc' };
+
+// Scroll to top functionality
+window.addEventListener('scroll', () => {
+    const scrollTop = document.getElementById('scrollTop');
+    if (window.pageYOffset > 300) {
+        scrollTop.classList.add('show');
+    } else {
+        scrollTop.classList.remove('show');
+    }
+});
+
+document.getElementById('scrollTop').addEventListener('click', () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Reset filters
+document.getElementById('reset-filters').addEventListener('click', () => {
+    document.getElementById('filter-grade').value = 'all';
+    document.getElementById('filter-fruit').value = 'all';
+    document.getElementById('sort-order').value = 'desc';
+    currentPage = 1;
+    loadHistory(1);
+    
+    // Add animation feedback
+    const btn = document.getElementById('reset-filters');
+    btn.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        btn.style.transform = '';
+    }, 150);
+});
+
+async function loadHistory(page = 1) {
+    currentPage = page;
+    
+    const grade = document.getElementById('filter-grade').value;
+    const fruit = document.getElementById('filter-fruit').value;
+    const sort = document.getElementById('sort-order').value;
+    
+    const filters = new URLSearchParams({
+        page: page,
+        limit: 12,
+        grade: grade,
+        fruit: fruit,
+        sort: sort
+    });
+    
+    // Show loading state with skeleton
+    const grid = document.getElementById('history-grid');
+    grid.innerHTML = `
+        <div class="loading-history">
+            <div class="spinner"></div>
+            <p>Loading your history...</p>
+        </div>
+    `;
+    
+    try {
+        const response = await fetch(`/api/history?${filters}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            displayHistory(data.predictions);
+            updatePagination(data.pagination);
+            updateResultsCount(data.pagination);
+        } else {
+            throw new Error('Failed to load history');
+        }
+    } catch (error) {
+        console.error('Error loading history:', error);
+        grid.innerHTML = `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Failed to load your history. Please try again.</p>
+                <button onclick="location.reload()" class="btn btn-primary">
+                    <i class="fas fa-sync-alt"></i> Refresh Page
+                </button>
+            </div>
+        `;
+    }
+}
+
+function updateResultsCount(pagination) {
+    const countDiv = document.getElementById('results-count');
+    const start = (pagination.page - 1) * pagination.limit + 1;
+    const end = Math.min(pagination.page * pagination.limit, pagination.total);
+    
+    if (pagination.total === 0) {
+        countDiv.innerHTML = '<i class="fas fa-info-circle"></i> No results found';
+    } else {
+        countDiv.innerHTML = `
+            <i class="fas fa-chart-line"></i> 
+            Showing ${start} - ${end} of ${pagination.total} results
+        `;
+    }
+}
+
+function displayHistory(predictions) {
+    const grid = document.getElementById('history-grid');
+    
+    if (predictions.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-camera"></i>
+                <p>No predictions found with current filters</p>
+                <button onclick="resetFilters()" class="btn btn-primary">
+                    <i class="fas fa-undo-alt"></i> Reset Filters
+                </button>
+                <a href="/upload" class="btn btn-outline" style="margin-left: 0.5rem;">
+                    <i class="fas fa-upload"></i> Grade New Fruit
+                </a>
+            </div>
+        `;
+        return;
+    }
+    
+    grid.innerHTML = predictions.map((p, index) => `
+        <div class="history-card" onclick="viewPrediction('${p.id}')" style="animation-delay: ${index * 0.05}s">
+            <div class="history-card-header">
+                <div class="history-fruit-info">
+                    <i class="fas fa-${getFruitIcon(p.fruit_type)}"></i>
+                    <span class="history-fruit-name">${p.fruit_type.charAt(0).toUpperCase() + p.fruit_type.slice(1)}</span>
+                </div>
+                <div class="history-grade-badge grade-${p.grade.toLowerCase()}">Grade ${p.grade}</div>
+            </div>
+            <div class="history-card-image">
+                ${p.image_data ? 
+                    `<img src="data:image/jpeg;base64,${p.image_data}" alt="${p.fruit_type}" class="history-thumbnail" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\'history-no-image\'><i class=\'fas fa-image\'></i></div>'">` : 
+                    '<div class="history-no-image"><i class="fas fa-image"></i></div>'}
+            </div>
+            <div class="history-card-body">
+                <div class="history-confidence">
+                    <div class="confidence-label">
+                        <i class="fas fa-chart-line"></i> Confidence Score
+                    </div>
+                    <div class="confidence-value">${Math.round(p.confidence * 100)}%</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: 0%; background-color: ${getGradeColor(p.grade)}"></div>
+                    </div>
+                </div>
+                <div class="history-breakdown">
+                    <div class="breakdown-label">
+                        <i class="fas fa-chart-pie"></i> Grade Breakdown
+                    </div>
+                    <div class="breakdown-mini">
+                        <span class="breakdown-grade-a">
+                            <i class="fas fa-circle"></i> A: ${Math.round((p.grade_confidences?.A || 0) * 100)}%
+                        </span>
+                        <span class="breakdown-grade-b">
+                            <i class="fas fa-circle"></i> B: ${Math.round((p.grade_confidences?.B || 0) * 100)}%
+                        </span>
+                        <span class="breakdown-grade-c">
+                            <i class="fas fa-circle"></i> C: ${Math.round((p.grade_confidences?.C || 0) * 100)}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="history-card-footer">
+                <span class="history-date">
+                    <i class="fas fa-calendar-alt"></i> 
+                    ${new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                </span>
+                <button class="btn-view-card" onclick="event.stopPropagation(); viewPrediction('${p.id}')">
+                    View Details <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    // Animate confidence bars after cards are rendered
+    setTimeout(() => {
+        document.querySelectorAll('.confidence-fill').forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 100);
+        });
+    }, 100);
+}
+
+function updatePagination(pagination) {
+    const container = document.getElementById('pagination-container');
+    totalPages = pagination.total_pages;
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<div class="pagination">';
+    
+    // Previous button
+    if (currentPage > 1) {
+        html += `<button class="page-btn" onclick="loadHistory(${currentPage - 1})">
+                    <i class="fas fa-chevron-left"></i> Prev
+                </button>`;
+    }
+    
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="loadHistory(${i})">${i}</button>`;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            html += `<span class="page-dots">...</span>`;
+        }
+    }
+    
+    // Next button
+    if (currentPage < totalPages) {
+        html += `<button class="page-btn" onclick="loadHistory(${currentPage + 1})">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>`;
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetFilters() {
+    document.getElementById('filter-grade').value = 'all';
+    document.getElementById('filter-fruit').value = 'all';
+    document.getElementById('sort-order').value = 'desc';
+    currentPage = 1;
+    loadHistory(1);
+}
+
+function getFruitIcon(fruit) {
+    const icons = { 
+        'apple': 'apple-alt',
+        'apples': 'apple-alt', 
+        'mango': 'lemon',
+        'mangos': 'lemon', 
+        'orange': 'orange',
+        'oranges': 'orange',
+        'banana': 'banana',
+        'bananas': 'banana'
+    };
+    return icons[fruit] || 'apple-alt';
+}
+
+function getGradeColor(grade) {
+    const colors = { 'A': '#10b981', 'B': '#f59e0b', 'C': '#ef4444' };
+    return colors[grade] || '#6366f1';
+}
+
+function viewPrediction(predictionId) {
+    // Add click animation
+    const btn = event?.target;
+    if (btn && btn.classList.contains('btn-view-card')) {
+        btn.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            btn.style.transform = '';
+        }, 150);
+    }
+    
+    // Store prediction ID and redirect
+    sessionStorage.setItem('viewPredictionId', predictionId);
+    window.location.href = `/result/${predictionId}`;
+}
+
+function closeViewModal() {
+    const modal = document.getElementById('view-modal');
+    modal.style.display = 'none';
+    modal.classList.remove('show');
+}
+
+// Event listeners
+document.getElementById('apply-filters').addEventListener('click', () => {
+    currentPage = 1;
+    loadHistory(1);
+    
+    // Add animation feedback
+    const btn = document.getElementById('apply-filters');
+    btn.style.transform = 'scale(0.95)';
+    setTimeout(() => {
+        btn.style.transform = '';
+    }, 150);
+});
+
+// Enter key support for filters
+document.querySelectorAll('.filter-select').forEach(select => {
+    select.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            currentPage = 1;
+            loadHistory(1);
+        }
+    });
+});
+
+// Initial load
+loadHistory(1);
+</script>
+{% endblock %}

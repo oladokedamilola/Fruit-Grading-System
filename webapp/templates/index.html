@@ -1,102 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fruit Grading System - Home</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>🍎 Fruit Grading System</h1>
-            <p class="subtitle">AI-Powered Fruit Quality Assessment</p>
-        </header>
-        
-        <div class="grading-info">
-            <div class="info-card">
-                <h3>How It Works</h3>
-                <ol>
-                    <li>Upload a photo of a fruit</li>
-                    <li>Our AI analyzes quality attributes</li>
-                    <li>Get instant grade and confidence score</li>
-                </ol>
-            </div>
-            <div class="info-card">
-                <h3>Supported Fruits</h3>
-                <div class="fruit-icons">
-                    <span>🍎 Apple</span>
-                    <span>🥭 Mango</span>
-                    <span>🍊 Orange</span>
-                    <span>🍅 Tomato</span>
-                </div>
-            </div>
-            <div class="info-card">
-                <h3>Grade Definitions</h3>
-                <ul>
-                    <li><span class="grade-a">Grade A</span> - Excellent quality</li>
-                    <li><span class="grade-b">Grade B</span> - Good quality</li>
-                    <li><span class="grade-c">Grade C</span> - Poor quality</li>
-                </ul>
+{% extends "base.html" %}
+
+{% block title %}FruitSight - AI Fruit Grading{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-container">
+        <div class="hero-content">
+            <h1 class="hero-title">
+                Grade Your Fruits with
+                <span class="gradient-text">AI Precision</span>
+            </h1>
+            <p class="hero-description">
+                FruitSight uses advanced deep learning to instantly grade fruits 
+                by quality - from perfect Grade A to Grade C. No more guesswork.
+            </p>
+            <div class="hero-buttons">
+                <a href="{{ url_for('upload_page') }}" class="btn btn-primary btn-large">
+                    <i class="fas fa-camera"></i> Start Grading
+                </a>
+                <a href="#how-it-works" class="btn btn-outline btn-large">
+                    <i class="fas fa-play"></i> How It Works
+                </a>
             </div>
         </div>
-        
-        <div class="upload-area" id="upload-area">
-            <div class="upload-content">
-                <div class="upload-icon">📸</div>
-                <h3>Drag & Drop Your Fruit Image</h3>
-                <p>or click to browse</p>
-                <input type="file" id="file-input" accept="image/*" hidden>
-                <button class="upload-btn" onclick="document.getElementById('file-input').click()">
-                    Choose Image
-                </button>
-                <p class="file-info">Supported formats: JPG, JPEG, PNG (Max 16MB)</p>
+        <div class="hero-image">
+            <div class="hero-image-placeholder">
+                <i class="fas fa-apple-alt"></i>
+                <div class="floating-badge badge-a">Grade A</div>
+                <div class="floating-badge badge-b">Grade B</div>
+                <div class="floating-badge badge-c">Grade C</div>
             </div>
         </div>
-        
-        <div id="preview-container" style="display: none;">
-            <h3>Preview</h3>
-            <img id="image-preview" class="preview-image" alt="Preview">
-            <button class="clear-btn" onclick="clearImage()">Clear</button>
-        </div>
-        
-        <div id="loading" style="display: none;">
-            <div class="spinner"></div>
-            <p>Analyzing fruit quality...</p>
-        </div>
-        
-        <div id="result" style="display: none;">
-            <div class="result-card">
-                <h2>Grading Result</h2>
-                <div class="result-image-container">
-                    <img id="result-image" class="result-image" alt="Graded fruit">
-                </div>
-                <div class="result-details">
-                    <div class="fruit-type" id="fruit-type"></div>
-                    <div class="grade-badge" id="grade-badge"></div>
-                    <div class="confidence-bar-container">
-                        <label>Confidence:</label>
-                        <div class="confidence-bar">
-                            <div class="confidence-fill" id="confidence-fill"></div>
-                        </div>
-                        <span class="confidence-percent" id="confidence-percent"></span>
-                    </div>
-                    <div class="grade-breakdown" id="grade-breakdown">
-                        <h4>Grade Breakdown</h4>
-                        <div id="grade-bars"></div>
-                    </div>
-                    <button class="new-btn" onclick="resetForm()">Grade Another Fruit</button>
-                </div>
-            </div>
-        </div>
-        
-        <footer>
-            <p>Powered by Deep Learning | CNN Model with 95%+ Accuracy</p>
-            <a href="/about" class="about-link">Learn More</a>
-        </footer>
     </div>
-    
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-</body>
-</html>
+</section>
+
+<!-- Supported Fruits Section -->
+<section class="supported-fruits">
+    <div class="section-container">
+        <h2 class="section-title">Supported Fruits</h2>
+        <p class="section-subtitle">Currently grading these fruit varieties</p>
+        <div class="fruits-grid">
+            <div class="fruit-card"><i class="fas fa-apple-alt"></i><span>Apples</span></div>
+            <div class="fruit-card"><i class="fas fa-lemon"></i><span>Mangoes</span></div>
+            <div class="fruit-card"><i class="fas fa-orange"></i><span>Oranges</span></div>
+            <div class="fruit-card"><i class="fas fa-seedling"></i><span>More coming</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Section -->
+<section id="how-it-works" class="how-it-works">
+    <div class="section-container">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">Three simple steps to grade your fruit</p>
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-icon"><i class="fas fa-camera"></i></div>
+                <h3>Upload</h3>
+                <p>Take a photo or upload an image of your fruit</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-icon"><i class="fas fa-brain"></i></div>
+                <h3>Analyze</h3>
+                <p>AI analyzes color, shape, and defects</p>
+            </div>
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-icon"><i class="fas fa-chart-simple"></i></div>
+                <h3>Get Grade</h3>
+                <p>Receive instant grade with confidence score</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Grade Definitions -->
+<section class="grade-definitions">
+    <div class="section-container">
+        <h2 class="section-title">Understanding Grades</h2>
+        <div class="grades-grid">
+            <div class="grade-card grade-a-card">
+                <span class="grade-badge grade-a">Grade A</span>
+                <h3>Excellent</h3>
+                <p>Perfect color, no defects, ideal shape</p>
+            </div>
+            <div class="grade-card grade-b-card">
+                <span class="grade-badge grade-b">Grade B</span>
+                <h3>Good</h3>
+                <p>Minor imperfections, still great quality</p>
+            </div>
+            <div class="grade-card grade-c-card">
+                <span class="grade-badge grade-c">Grade C</span>
+                <h3>Poor</h3>
+                <p>Significant defects, not for sale</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="section-container">
+        <h2>Ready to Grade Your Fruits?</h2>
+        <p>Try FruitSight free - 3 grades for anonymous users, unlimited for registered users</p>
+        <a href="{{ url_for('upload_page') }}" class="btn btn-primary btn-large">
+            <i class="fas fa-arrow-right"></i> Start Now
+        </a>
+    </div>
+</section>
+{% endblock %}

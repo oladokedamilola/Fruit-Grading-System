@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}File Too Large - FruitSight{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-card">
+        <div class="error-icon">
+            <i class="fas fa-file-image"></i>
+        </div>
+        <h1 class="error-code">413</h1>
+        <h2 class="error-title">File Too Large</h2>
+        <p class="error-message">The uploaded file exceeds the 16MB size limit.</p>
+        <div class="error-actions">
+            <a href="{{ url_for('upload_page') }}" class="btn btn-primary">
+                <i class="fas fa-camera"></i> Try Another Image
+            </a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+        </div>
+        <div class="error-tips">
+            <p><i class="fas fa-lightbulb"></i> Tips:</p>
+            <ul>
+                <li>Compress your image before uploading</li>
+                <li>Use JPG format for smaller file sizes</li>
+                <li>Resize large images to under 16MB</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

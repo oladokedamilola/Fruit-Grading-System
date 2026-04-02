@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - FruitSight{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-card">
+        <div class="error-icon">
+            <i class="fas fa-search"></i>
+        </div>
+        <h1 class="error-code">404</h1>
+        <h2 class="error-title">Page Not Found</h2>
+        <p class="error-message">Oops! The page you're looking for doesn't exist or has been moved.</p>
+        <div class="error-actions">
+            <a href="{{ url_for('index') }}" class="btn btn-primary">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+            <a href="{{ url_for('upload_page') }}" class="btn btn-secondary">
+                <i class="fas fa-camera"></i> Grade a Fruit
+            </a>
+        </div>
+        <div class="error-suggestions">
+            <p>You might want to try:</p>
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home Page</a></li>
+                <li><a href="{{ url_for('upload_page') }}">Grade a Fruit</a></li>
+                <li><a href="{{ url_for('dashboard') }}">Your Dashboard</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

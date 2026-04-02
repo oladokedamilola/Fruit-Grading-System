@@ -1,0 +1,1023 @@
+{% extends "base.html" %}
+
+{% block title %}Grading Result - FruitSight{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Results Page Specific Styles */
+    .result-page-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        animation: fadeInUp 0.6s ease-out;
+        overflow-x: hidden;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .result-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .result-header h1 {
+        color: white;
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        animation: slideInDown 0.6s ease-out;
+    }
+    
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .result-header p {
+        color: rgba(255,255,255,0.9);
+        font-size: 1.1rem;
+        animation: fadeIn 0.8s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+    
+    /* Result Card */
+    .result-card {
+        background: white;
+        border-radius: 1.5rem;
+        overflow: hidden;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.02);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        animation: slideInUp 0.6s ease-out;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .result-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 30px -12px rgba(0,0,0,0.2);
+    }
+    
+    /* Result Header Section */
+    .result-header-section {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        padding: 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .result-header-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: shimmerRotate 20s linear infinite;
+    }
+    
+    @keyframes shimmerRotate {
+        from {
+            transform: rotate(0deg);
+        }
+        to {
+            transform: rotate(360deg);
+        }
+    }
+    
+    .fruit-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .fruit-info i {
+        font-size: 2.5rem;
+        filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+        animation: bounce 2s ease-in-out infinite;
+    }
+    
+    @keyframes bounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+    
+    .fruit-type-text {
+        font-size: 1.8rem;
+        font-weight: 800;
+        text-transform: capitalize;
+        letter-spacing: -0.5px;
+    }
+    
+    .grade-badge-large {
+        font-size: 2.5rem;
+        font-weight: 800;
+        padding: 0.5rem 2rem;
+        border-radius: 3rem;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        position: relative;
+        z-index: 1;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+    }
+    
+    /* Result Body Section */
+    .result-body-section {
+        padding: 2rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        background: linear-gradient(135deg, #ffffff, #f8fafc);
+    }
+    
+    /* Image Container */
+    .result-image-container {
+        position: relative;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        background: #f8fafc;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+    
+    .result-image-container:hover {
+        transform: scale(1.02);
+    }
+    
+    .result-image-large {
+        width: 100%;
+        height: auto;
+        max-height: 350px;
+        object-fit: contain;
+        display: block;
+        transition: transform 0.5s ease;
+    }
+    
+    .result-image-container:hover .result-image-large {
+        transform: scale(1.05);
+    }
+    
+    .zoom-hint {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .result-image-container:hover .zoom-hint {
+        opacity: 1;
+    }
+    
+    /* Confidence Circle */
+    .confidence-circle-container {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .confidence-circle-container h3 {
+        color: var(--dark);
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .confidence-circle-container h3 i {
+        color: var(--primary);
+    }
+    
+    .confidence-circle-large {
+        width: 180px;
+        margin: 0 auto;
+        position: relative;
+    }
+    
+    .circular-chart {
+        width: 100%;
+        height: auto;
+        transform: rotate(-90deg);
+    }
+    
+    .circle-bg {
+        fill: none;
+        stroke: #e2e8f0;
+        stroke-width: 3.8;
+    }
+    
+    .circle {
+        fill: none;
+        stroke-width: 3.8;
+        stroke-linecap: round;
+        animation: progress 1.5s ease-out forwards;
+        transition: stroke-dasharray 0.5s ease;
+    }
+    
+    @keyframes progress {
+        0% {
+            stroke-dasharray: 0, 100;
+        }
+        100% {
+            stroke-dasharray: var(--percent, 0), 100;
+        }
+    }
+    
+    .percentage {
+        fill: var(--dark);
+        font-size: 0.5em;
+        text-anchor: middle;
+        font-weight: 800;
+        transform: rotate(90deg);
+        animation: fadeInScale 1s ease-out;
+    }
+    
+    @keyframes fadeInScale {
+        from {
+            opacity: 0;
+            transform: rotate(90deg) scale(0.5);
+        }
+        to {
+            opacity: 1;
+            transform: rotate(90deg) scale(1);
+        }
+    }
+    
+    /* Grade Breakdown Section */
+    .grade-breakdown-section {
+        margin-top: 1rem;
+    }
+    
+    .grade-breakdown-section h3 {
+        color: var(--dark);
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .grade-breakdown-section h3 i {
+        color: var(--primary);
+    }
+    
+    #grade-breakdown-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .breakdown-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.5rem;
+        background: white;
+        border-radius: 0.75rem;
+        transition: all 0.3s ease;
+        animation: slideInLeft 0.5s ease-out;
+        animation-fill-mode: both;
+    }
+    
+    .breakdown-item:nth-child(1) { animation-delay: 0.1s; }
+    .breakdown-item:nth-child(2) { animation-delay: 0.2s; }
+    .breakdown-item:nth-child(3) { animation-delay: 0.3s; }
+    
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+    
+    .breakdown-item:hover {
+        transform: translateX(5px);
+        background: #f8fafc;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .grade-label {
+        min-width: 100px;
+        text-align: center;
+        font-weight: 700;
+        transition: all 0.3s ease;
+    }
+    
+    .breakdown-item:hover .grade-label {
+        transform: scale(1.05);
+    }
+    
+    .breakdown-bar {
+        flex: 1;
+        height: 10px;
+        background: #e2e8f0;
+        border-radius: 5px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .breakdown-fill {
+        height: 100%;
+        border-radius: 5px;
+        transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .breakdown-fill::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+    }
+    
+    .breakdown-score {
+        min-width: 50px;
+        text-align: right;
+        font-weight: 700;
+        color: var(--dark);
+    }
+    
+    /* Result Footer */
+    .result-footer-section {
+        padding: 1.5rem 2rem;
+        background: white;
+        border-top: 1px solid #e2e8f0;
+        text-align: center;
+    }
+    
+    .processing-time {
+        color: var(--gray);
+        font-size: 0.875rem;
+        margin-bottom: 1.5rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: #f8fafc;
+        border-radius: 2rem;
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .action-buttons .btn {
+        min-width: 180px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .action-buttons .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .action-buttons .btn:active {
+        transform: translateY(0);
+    }
+    
+    /* Confetti Celebration */
+    .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: var(--primary);
+        position: fixed;
+        top: -10px;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 9999;
+        animation: fall linear forwards;
+    }
+    
+    @keyframes fall {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+            opacity: 0;
+        }
+    }
+    
+    /* Share Section */
+    .share-section {
+        margin-top: 2rem;
+        text-align: center;
+        animation: fadeInUp 0.6s ease-out 0.3s both;
+    }
+    
+    .share-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .share-btn {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .share-btn:hover {
+        transform: translateY(-2px);
+        text-decoration: none;
+    }
+    
+    .share-btn.twitter { background: #1DA1F2; }
+    .share-btn.facebook { background: #4267B2; }
+    .share-btn.linkedin { background: #0077B5; }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .result-page-container {
+            padding: 1rem;
+        }
+        
+        .result-header h1 {
+            font-size: 1.75rem;
+        }
+        
+        .result-header-section {
+            flex-direction: column;
+            text-align: center;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+        
+        .fruit-info {
+            flex-direction: column;
+        }
+        
+        .fruit-type-text {
+            font-size: 1.5rem;
+        }
+        
+        .grade-badge-large {
+            font-size: 2rem;
+            padding: 0.35rem 1.5rem;
+        }
+        
+        .result-body-section {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            padding: 1.5rem;
+        }
+        
+        .confidence-circle-large {
+            width: 150px;
+        }
+        
+        .breakdown-item {
+            gap: 0.75rem;
+        }
+        
+        .grade-label {
+            min-width: 70px;
+            font-size: 0.875rem;
+        }
+        
+        .breakdown-score {
+            font-size: 0.875rem;
+        }
+        
+        .action-buttons .btn {
+            min-width: 140px;
+            font-size: 0.875rem;
+        }
+        
+        .share-buttons {
+            gap: 0.5rem;
+        }
+        
+        .share-btn {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.75rem;
+        }
+    }
+    
+    /* Print Styles */
+    @media print {
+        .action-buttons,
+        .share-section,
+        .result-header-section::before,
+        .result-image-container::before {
+            display: none;
+        }
+        
+        .result-card {
+            box-shadow: none;
+        }
+        
+        .result-header-section {
+            background: var(--primary);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="result-page-container">
+    <div class="result-header">
+        <h1><i class="fas fa-chart-simple"></i> Grading Result</h1>
+        <p>Your fruit has been analyzed with AI precision</p>
+    </div>
+    
+    <div class="result-card" id="result-card">
+        <div class="result-header-section">
+            <div class="fruit-info">
+                <i class="fas fa-apple-alt" id="result-fruit-icon"></i>
+                <span id="result-fruit-type" class="fruit-type-text"></span>
+            </div>
+            <div class="grade-badge-large" id="result-grade-badge"></div>
+        </div>
+        
+        <div class="result-body-section">
+            <div class="result-image-container" id="result-image-container">
+                <img id="result-image" class="result-image-large" alt="Graded fruit">
+                <div class="zoom-hint">
+                    <i class="fas fa-search-plus"></i> Click to zoom
+                </div>
+            </div>
+            
+            <div class="result-details-section">
+                <div class="confidence-circle-container">
+                    <h3><i class="fas fa-chart-line"></i> Confidence Score</h3>
+                    <div class="confidence-circle-large">
+                        <svg viewBox="0 0 36 36" class="circular-chart">
+                            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="circle" id="confidence-circle-path" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <text x="18" y="20.35" id="confidence-percent-text" class="percentage">0%</text>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="grade-breakdown-section">
+                    <h3><i class="fas fa-chart-pie"></i> Grade Breakdown</h3>
+                    <div id="grade-breakdown-list"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="result-footer-section">
+            <p class="processing-time" id="processing-time">
+                <i class="fas fa-clock"></i> Processing...
+            </p>
+            <div class="action-buttons">
+                <button onclick="location.href='/upload'" class="btn btn-secondary">
+                    <i class="fas fa-camera"></i> Grade Another
+                </button>
+                <button id="save-result-btn" class="btn btn-primary" style="display: none;">
+                    <i class="fas fa-save"></i> Save to History
+                </button>
+                <button onclick="window.print()" class="btn btn-outline">
+                    <i class="fas fa-print"></i> Print Result
+                </button>
+            </div>
+        </div>
+    </div>
+    
+
+</div>
+
+<!-- Image Modal for Fullscreen View -->
+<div id="image-modal" class="image-modal" onclick="closeImageModal()" style="display: none;">
+    <img id="modal-image" alt="Full size fruit image">
+</div>
+
+<!-- Save Prompt Modal -->
+<div id="save-modal" class="modal" style="display:none">
+    <div class="modal-content">
+        <span class="close" id="close-save-modal">&times;</span>
+        <i class="fas fa-save modal-icon"></i>
+        <h2>Save Your Result</h2>
+        <p>Create a free account to save this grading result and track your history!</p>
+        <div class="modal-buttons">
+            <a href="{{ url_for('auth.login_page') }}" class="btn btn-primary">Login</a>
+            <a href="{{ url_for('auth.register_page') }}" class="btn btn-secondary">Sign Up</a>
+        </div>
+        <button class="btn-link" id="save-later-btn">Maybe later</button>
+    </div>
+</div>
+
+<style>
+    .image-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 3000;
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .image-modal.show {
+        display: flex;
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    .image-modal img {
+        max-width: 90%;
+        max-height: 90%;
+        object-fit: contain;
+        animation: zoomIn 0.3s ease-out;
+    }
+    
+    @keyframes zoomIn {
+        from {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+    
+    .btn-outline {
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--primary);
+    }
+    
+    .btn-outline:hover {
+        background: var(--primary);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Results page loaded');
+    
+    // First check if user is logged in
+    let isLoggedIn = false;
+    try {
+        const sessionRes = await fetch('/api/check-session');
+        const sessionData = await sessionRes.json();
+        isLoggedIn = sessionData.logged_in;
+        console.log('User logged in:', isLoggedIn);
+    } catch (error) {
+        console.error('Session check error:', error);
+    }
+    
+    // Load result from sessionStorage
+    const resultData = JSON.parse(sessionStorage.getItem('gradingResult') || '{}');
+    const imageData = sessionStorage.getItem('gradingImage') || '';
+    
+    console.log('Result data:', resultData);
+    
+    if (!resultData.success && !resultData.fruit_type) {
+        // No result found, redirect to upload page
+        console.log('No result data found, redirecting to upload');
+        window.location.href = '/upload';
+        return;
+    }
+    
+    // Grade colors and gradients
+    const gradeColors = {
+        'A': '#10b981',
+        'B': '#f59e0b',
+        'C': '#ef4444'
+    };
+    
+    const gradeGradients = {
+        'A': 'linear-gradient(135deg, #10b981, #059669)',
+        'B': 'linear-gradient(135deg, #f59e0b, #d97706)',
+        'C': 'linear-gradient(135deg, #ef4444, #dc2626)'
+    };
+    
+    // Fruit icons
+    const fruitIcons = {
+        'apple': 'fa-apple-alt',
+        'apples': 'fa-apple-alt',
+        'mango': 'fa-lemon',
+        'mangos': 'fa-lemon',
+        'orange': 'fa-orange',
+        'oranges': 'fa-orange',
+        'banana': 'fa-banana',
+        'bananas': 'fa-banana'
+    };
+    
+    // Display fruit type with animation
+    const fruitType = resultData.fruit_type || 'fruit';
+    const fruitTypeElement = document.getElementById('result-fruit-type');
+    fruitTypeElement.textContent = fruitType.charAt(0).toUpperCase() + fruitType.slice(1);
+    fruitTypeElement.style.animation = 'fadeInUp 0.5s ease-out';
+    
+    // Display fruit icon
+    const iconElement = document.getElementById('result-fruit-icon');
+    if (fruitIcons[fruitType]) {
+        iconElement.className = `fas ${fruitIcons[fruitType]}`;
+    } else {
+        iconElement.className = 'fas fa-apple-alt';
+    }
+    
+    // Display grade badge
+    const predictedGrade = resultData.grade || 'C';
+    const gradeBadge = document.getElementById('result-grade-badge');
+    gradeBadge.textContent = `Grade ${predictedGrade}`;
+    gradeBadge.style.background = gradeGradients[predictedGrade];
+    
+    // Display confidence circle with counter animation
+    const confidence = resultData.confidence || 0;
+    const percent = Math.round(confidence * 100);
+    const circlePath = document.getElementById('confidence-circle-path');
+    circlePath.setAttribute('stroke-dasharray', `${percent}, 100`);
+    circlePath.style.stroke = gradeColors[predictedGrade];
+    circlePath.style.setProperty('--percent', `${percent}`);
+    
+    // Animate percentage counter
+    const percentText = document.getElementById('confidence-percent-text');
+    let currentPercent = 0;
+    const interval = setInterval(() => {
+        if (currentPercent >= percent) {
+            clearInterval(interval);
+            percentText.textContent = `${percent}%`;
+        } else {
+            currentPercent++;
+            percentText.textContent = `${currentPercent}%`;
+        }
+    }, 20);
+    
+    // Display image with zoom capability
+    const resultImage = document.getElementById('result-image');
+    const imageContainer = document.getElementById('result-image-container');
+    
+    if (imageData) {
+        resultImage.src = imageData;
+        resultImage.style.animation = 'fadeInUp 0.5s ease-out';
+        
+        // Add zoom functionality
+        imageContainer.style.cursor = 'pointer';
+        imageContainer.onclick = function(e) {
+            e.stopPropagation();
+            showImageModal(imageData);
+        };
+        
+        resultImage.onerror = function() {
+            console.log('Image load error, using placeholder');
+            resultImage.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="%236366f1"%3E%3Cpath d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h-2v-2h2v2zm0-4h-2V7h2v6z"/%3E%3C/svg%3E';
+        };
+    }
+    
+    // Display grade breakdown
+    const breakdownList = document.getElementById('grade-breakdown-list');
+    let gradeConfidences = resultData.grade_confidences || {};
+    
+    // If grade_confidences is empty, try other possible formats
+    if (Object.keys(gradeConfidences).length === 0 && resultData.grade_confidence) {
+        gradeConfidences = resultData.grade_confidence;
+    }
+    if (Object.keys(gradeConfidences).length === 0 && resultData.confidence_scores) {
+        gradeConfidences = resultData.confidence_scores;
+    }
+    
+    console.log('Grade confidences:', gradeConfidences);
+    
+    const grades = ['A', 'B', 'C'];
+    breakdownList.innerHTML = '';
+    
+    grades.forEach((gradeLetter, index) => {
+        let score = 0;
+        // Check different possible key formats
+        if (gradeConfidences[gradeLetter] !== undefined) {
+            score = gradeConfidences[gradeLetter];
+        } else if (gradeConfidences[`grade_${gradeLetter}`] !== undefined) {
+            score = gradeConfidences[`grade_${gradeLetter}`];
+        } else if (gradeConfidences[gradeLetter.toLowerCase()] !== undefined) {
+            score = gradeConfidences[gradeLetter.toLowerCase()];
+        }
+        
+        const percentScore = Math.round(score * 100);
+        const item = document.createElement('div');
+        item.className = 'breakdown-item';
+        item.style.animationDelay = `${index * 0.1}s`;
+        item.innerHTML = `
+            <span class="grade-label" style="background: ${gradeGradients[gradeLetter]}; color: white; padding: 0.35rem 1rem; border-radius: 2rem; min-width: 90px; text-align: center; font-weight: 700;">
+                Grade ${gradeLetter}
+            </span>
+            <div class="breakdown-bar">
+                <div class="breakdown-fill" style="width: 0%; background: ${gradeColors[gradeLetter]}"></div>
+            </div>
+            <span class="breakdown-score">${percentScore}%</span>
+        `;
+        breakdownList.appendChild(item);
+        
+        // Animate the bar width
+        setTimeout(() => {
+            const fill = item.querySelector('.breakdown-fill');
+            if (fill) {
+                fill.style.width = `${percentScore}%`;
+            }
+        }, 100 + (index * 100));
+    });
+    
+    // Display processing time
+    const processingTime = resultData.processing_time || 0.5;
+    const timeElement = document.getElementById('processing-time');
+    timeElement.innerHTML = `<i class="fas fa-chart-line"></i> Processing time: ${processingTime.toFixed(2)} seconds`;
+    
+    // Show share section for good results
+    if (predictedGrade === 'A' && confidence > 0.85) {
+        const shareSection = document.getElementById('share-section');
+        shareSection.style.display = 'block';
+        
+        // Setup share links
+        const text = `I just graded a ${fruitType} with FruitSight AI and got Grade ${predictedGrade}! 🍎✨`;
+        const url = window.location.href;
+        
+        document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+        document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`;
+        document.getElementById('share-linkedin').href = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent('FruitSight Grading Result')}&summary=${encodeURIComponent(text)}`;
+    }
+    
+    // Save button functionality
+    const saveBtn = document.getElementById('save-result-btn');
+    const saveModal = document.getElementById('save-modal');
+    const closeSaveModal = document.getElementById('close-save-modal');
+    const saveLaterBtn = document.getElementById('save-later-btn');
+    
+    function showModal(modal) {
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+    }
+    
+    function hideModal(modal) {
+        if (modal) {
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+    }
+    
+    // Only show save button for unauthenticated users
+    if (!isLoggedIn) {
+        saveBtn.style.display = 'inline-flex';
+        saveBtn.addEventListener('click', () => showModal(saveModal));
+    } else {
+        saveBtn.style.display = 'none';
+    }
+    
+    if (closeSaveModal) {
+        closeSaveModal.addEventListener('click', () => hideModal(saveModal));
+    }
+    
+    if (saveLaterBtn) {
+        saveLaterBtn.addEventListener('click', () => hideModal(saveModal));
+    }
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', (e) => {
+        if (e.target === saveModal) hideModal(saveModal);
+    });
+    
+    // Confetti celebration for excellent results
+    if (predictedGrade === 'A' && confidence > 0.9) {
+        createConfetti();
+    }
+    
+    console.log('Results page displayed successfully');
+});
+
+// Image modal functions
+function showImageModal(imageSrc) {
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-image');
+    modalImg.src = imageSrc;
+    modal.style.display = 'flex';
+    setTimeout(() => modal.classList.add('show'), 10);
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('image-modal');
+    modal.classList.remove('show');
+    setTimeout(() => {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }, 300);
+}
+
+// Close image modal with Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeImageModal();
+    }
+});
+
+// Confetti celebration function
+function createConfetti() {
+    const colors = ['#10b981', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6'];
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.left = Math.random() * window.innerWidth + 'px';
+        confetti.style.width = (Math.random() * 8 + 4) + 'px';
+        confetti.style.height = (Math.random() * 8 + 4) + 'px';
+        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 4000);
+    }
+}
+</script>
+{% endblock %}

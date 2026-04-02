@@ -1,6 +1,5 @@
 """
-Configuration Module
-Centralized configuration for the web application
+Configuration Module for Fruit Grading System
 """
 
 import os
@@ -9,52 +8,75 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    """Application configuration"""
+    """Base configuration"""
     
     # Flask settings
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
-    DEBUG = os.getenv('FLASK_DEBUG', '1') == '1'
+    DEBUG = os.getenv('FLASK_DEBUG', 'False') == 'True'
+    
+    # Database settings
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Upload settings
-    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'webapp/static/uploads')
-    MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16MB
+    MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
     
     # Model settings
-    MODEL_PATH = os.getenv('MODEL_PATH', 'ml/models/fruit_grading_efficientnetb0.h5')
+    MODEL_PATH = os.getenv('MODEL_PATH', 'ml/models/fruit_grading_simple_cnn.keras')
     IMG_HEIGHT = int(os.getenv('IMG_HEIGHT', 224))
     IMG_WIDTH = int(os.getenv('IMG_WIDTH', 224))
     
     # Fruit classes
-    FRUIT_TYPES = ['apple', 'mango', 'orange', 'tomato']
+    FRUIT_TYPES = ['apples', 'mangos', 'oranges']
     GRADES = ['A', 'B', 'C']
     
     # Application settings
-    APP_NAME = 'Fruit Grading System'
-    APP_VERSION = '1.0.0'
+    APP_NAME = 'FruitSight'
+    APP_VERSION = '2.0.0'
+    
+    # Anonymous user limits
+    ANONYMOUS_PREDICTION_LIMIT = int(os.getenv('ANONYMOUS_LIMIT', 3))
     
     @classmethod
     def init_app(cls, app):
         """Initialize application with config"""
-        # Create upload folder if it doesn't exist
-        os.makedirs(cls.UPLOAD_FOLDER, exist_ok=True)
-        
-        # Set secret key if not set
-        if not app.config.get('SECRET_KEY'):
-            app.config['SECRET_KEY'] = cls.SECRET_KEY
+        upload_folder = os.getenv('UPLOAD_FOLDER', '/tmp/uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        app.config['UPLOAD_FOLDER'] = upload_folder
+
 
 class DevelopmentConfig(Config):
     """Development configuration"""
     DEBUG = True
-    TESTING = False
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///instance/fruit_grading.db')
+    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', 'webapp/static/uploads')
+
 
 class ProductionConfig(Config):
-    """Production configuration"""
+    """Production configuration for Render"""
     DEBUG = False
-    TESTING = False
-    SECRET_KEY = os.getenv('SECRET_KEY')  # Must be set in environment
+    
+    # Render provides DATABASE_URL (PostgreSQL)
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL or 'sqlite:///instance/fruit_grading.db'
+    
+    # Use /tmp for ephemeral storage
+    UPLOAD_FOLDER = '/tmp/uploads'
+    
+    @classmethod
+    def init_app(cls, app):
+        super().init_app(app)
+        # Ensure upload directory exists
+        os.makedirs(cls.UPLOAD_FOLDER, exist_ok=True)
 
-class TestingConfig(Config):
-    """Testing configuration"""
-    DEBUG = False
-    TESTING = True
-    UPLOAD_FOLDER = 'webapp/static/test_uploads'
+
+# Environment selection
+config_map = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'default': DevelopmentConfig
+}
+
+ENV = os.getenv('FLASK_ENV', 'development')
+CurrentConfig = config_map.get(ENV, DevelopmentConfig)

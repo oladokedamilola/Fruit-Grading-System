@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="FruitSight - AI-powered fruit quality grading system">
+    <title>{% block title %}FruitSight{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS (overrides Bootstrap when needed) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='images/fav.png') }}" type="image/x-icon">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+   <!-- Bootstrap 5 Navigation Bar with Effects -->
+<nav class="navbar navbar-expand-lg sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="{{ url_for('index') }}">
+            <i class="fas fa-apple-alt"></i>
+            <span>FruitSight</span>
+        </a>
+        
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'upload_page' %}active{% endif %}" href="{{ url_for('upload_page') }}">Grade Fruit</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'about' %}active{% endif %}" href="{{ url_for('about') }}">About</a>
+                </li>
+                
+                {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'history_page' %}active{% endif %}" href="{{ url_for('history_page') }}">History</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-primary ms-lg-2" href="{{ url_for('auth.logout') }}">Logout</a>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'auth.login_page' %}active{% endif %}" href="{{ url_for('auth.login_page') }}">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link btn btn-primary ms-lg-2" href="{{ url_for('auth.register_page') }}">Sign Up</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+    <!-- Flash Messages Container -->
+    <div id="flash-container" class="flash-container"></div>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <div class="footer-brand">
+                        <i class="fas fa-apple-alt"></i>
+                        <span>FruitSight</span>
+                        <p>AI-powered fruit quality grading</p>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <div class="row">
+                        <div class="col-md-4 mb-4 mb-md-0">
+                            <h4>Product</h4>
+                            <a href="{{ url_for('upload_page') }}">Grade Fruit</a>
+                            <a href="#how-it-works">How It Works</a>
+                        </div>
+                        <div class="col-md-4 mb-4 mb-md-0">
+                            <h4>Company</h4>
+                            <a href="{{ url_for('about') }}">About</a>
+                            <a href="mailto:support@fruitsight.com">Contact</a>
+                        </div>
+                        <div class="col-md-4">
+                            <h4>Legal</h4>
+                            <a href="#">Privacy</a>
+                            <a href="#">Terms</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom text-center">
+            <p>&copy; 2026 FruitSight. All rights reserved.</p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Your main.js file -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Flash Message handling -->
+    <script>
+        function showFlashMessage(message, category = 'info') {
+            const container = document.getElementById('flash-container');
+            if (!container) return;
+            
+            const flashDiv = document.createElement('div');
+            flashDiv.className = `flash-message flash-${category}`;
+            
+            let icon = 'info-circle';
+            if (category === 'success') icon = 'check-circle';
+            if (category === 'danger' || category === 'error') icon = 'exclamation-circle';
+            if (category === 'warning') icon = 'exclamation-triangle';
+            
+            flashDiv.innerHTML = `
+                <i class="fas fa-${icon}"></i>
+                <span class="flash-text">${escapeHtml(message)}</span>
+                <button class="flash-close" onclick="closeFlashMessage(this)">&times;</button>
+            `;
+            
+            container.appendChild(flashDiv);
+            
+            setTimeout(() => {
+                if (flashDiv && flashDiv.parentElement) {
+                    flashDiv.classList.add('fade-out');
+                    setTimeout(() => {
+                        if (flashDiv && flashDiv.parentElement) {
+                            flashDiv.remove();
+                        }
+                    }, 300);
+                }
+            }, 7000);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function closeFlashMessage(button) {
+            const flashDiv = button.closest('.flash-message');
+            if (flashDiv) {
+                flashDiv.classList.add('fade-out');
+                setTimeout(() => {
+                    if (flashDiv && flashDiv.parentElement) {
+                        flashDiv.remove();
+                    }
+                }, 300);
+            }
+        }
+        
+        // Display flashed messages from server
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    showFlashMessage('{{ message|safe }}', '{{ category }}');
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+
+
+<script>
+    // Ripple effect for navbar links
+    document.addEventListener('DOMContentLoaded', function() {
+        const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                // Create ripple element
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple-effect');
+                
+                // Get click position
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                
+                this.style.position = 'relative';
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+                
+                // Remove ripple after animation
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+    });
+</script>
+
+<style>
+    /* Ripple effect styles */
+    .ripple-effect {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(99, 102, 241, 0.3);
+        transform: scale(0);
+        animation: ripple 0.6s linear;
+        pointer-events: none;
+        width: 100px;
+        height: 100px;
+        margin-left: -50px;
+        margin-top: -50px;
+    }
+    
+    @keyframes ripple {
+        0% {
+            transform: scale(0);
+            opacity: 0.5;
+        }
+        100% {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+</style>
+</body>
+</html>
