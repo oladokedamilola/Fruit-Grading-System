@@ -2,6 +2,174 @@
 
 {% block title %}Server Error - FruitSight{% endblock %}
 
+{% block extra_css %}
+<style>
+    .error-container {
+        min-height: calc(100vh - 300px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .error-card {
+        background: white;
+        border-radius: 1.5rem;
+        max-width: 550px;
+        width: 100%;
+        padding: 3rem 2.5rem;
+        text-align: center;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.02);
+        animation: slideInUp 0.6s ease-out;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .error-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 30px -12px rgba(0,0,0,0.2);
+    }
+    
+    .error-icon {
+        font-size: 5rem;
+        color: var(--danger);
+        margin-bottom: 1.5rem;
+        animation: shakeWarning 2s ease-in-out infinite;
+    }
+    
+    @keyframes shakeWarning {
+        0%, 100% {
+            transform: rotate(0deg);
+        }
+        10%, 30%, 50%, 70%, 90% {
+            transform: rotate(-5deg);
+        }
+        20%, 40%, 60%, 80% {
+            transform: rotate(5deg);
+        }
+    }
+    
+    .error-code {
+        font-size: 6rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--danger), #dc2626);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        letter-spacing: -2px;
+    }
+    
+    .error-title {
+        font-size: 1.75rem;
+        color: var(--dark);
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+    
+    .error-message {
+        color: var(--gray);
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin: 1.5rem 0;
+    }
+    
+    .error-actions .btn {
+        min-width: 160px;
+        transition: all 0.3s ease;
+    }
+    
+    .error-actions .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .error-actions .btn:active {
+        transform: translateY(0);
+    }
+    
+    .error-note {
+        text-align: left;
+        padding-top: 1rem;
+        margin-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .error-note p {
+        margin: 0.5rem 0;
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .error-note i {
+        color: var(--primary);
+    }
+    
+    .retry-countdown {
+        margin-top: 1rem;
+        font-size: 0.875rem;
+        color: var(--gray);
+    }
+    
+    @media (max-width: 560px) {
+        .error-container {
+            padding: 1rem;
+        }
+        
+        .error-card {
+            padding: 2rem 1.5rem;
+        }
+        
+        .error-code {
+            font-size: 4rem;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+        }
+        
+        .error-actions {
+            flex-direction: column;
+        }
+        
+        .error-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="error-container">
     <div class="error-card">
@@ -10,19 +178,74 @@
         </div>
         <h1 class="error-code">500</h1>
         <h2 class="error-title">Server Error</h2>
-        <p class="error-message">Something went wrong on our end. Please try again in a few moments.</p>
+        <p class="error-message">Something went wrong on our end. Our team has been notified and we're working to fix the issue.</p>
         <div class="error-actions">
             <a href="{{ url_for('index') }}" class="btn btn-primary">
                 <i class="fas fa-home"></i> Back to Home
             </a>
-            <button onclick="location.reload()" class="btn btn-secondary">
+            <button onclick="retryPage()" class="btn btn-secondary" id="retryBtn">
                 <i class="fas fa-sync-alt"></i> Try Again
             </button>
         </div>
         <div class="error-note">
             <i class="fas fa-envelope"></i>
-            <p>If the problem persists, please contact support.</p>
+            <p>If the problem persists, please contact our support team at <strong>support@fruitsight.com</strong></p>
+            <div class="retry-countdown" id="countdown"></div>
         </div>
     </div>
 </div>
+
+<script>
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    function retryPage() {
+        const btn = document.getElementById('retryBtn');
+        retryCount++;
+        
+        if (retryCount <= maxRetries) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Retrying...';
+            
+            // Show countdown
+            const countdownDiv = document.getElementById('countdown');
+            let seconds = 3;
+            countdownDiv.innerHTML = `<i class="fas fa-clock"></i> Retrying in ${seconds} seconds...`;
+            
+            const interval = setInterval(() => {
+                seconds--;
+                if (seconds > 0) {
+                    countdownDiv.innerHTML = `<i class="fas fa-clock"></i> Retrying in ${seconds} seconds...`;
+                } else {
+                    clearInterval(interval);
+                    window.location.reload();
+                }
+            }, 1000);
+        } else {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-times"></i> Max Retries Exceeded';
+            document.getElementById('countdown').innerHTML = '<i class="fas fa-info-circle"></i> Please refresh the page manually or contact support.';
+        }
+    }
+    
+    // Auto-retry once after 5 seconds (optional)
+    setTimeout(() => {
+        if (retryCount === 0) {
+            const countdownDiv = document.getElementById('countdown');
+            countdownDiv.innerHTML = '<i class="fas fa-sync-alt"></i> Auto-retry in 5 seconds...';
+            let seconds = 5;
+            const interval = setInterval(() => {
+                seconds--;
+                if (seconds > 0) {
+                    countdownDiv.innerHTML = `<i class="fas fa-sync-alt"></i> Auto-retry in ${seconds} seconds...`;
+                } else {
+                    clearInterval(interval);
+                    if (retryCount === 0) {
+                        retryPage();
+                    }
+                }
+            }, 1000);
+        }
+    }, 2000);
+</script>
 {% endblock %}

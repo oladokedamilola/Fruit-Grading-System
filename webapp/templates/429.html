@@ -2,6 +2,194 @@
 
 {% block title %}Limit Reached - FruitSight{% endblock %}
 
+{% block extra_css %}
+<style>
+    .error-container {
+        min-height: calc(100vh - 300px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .error-card {
+        background: white;
+        border-radius: 1.5rem;
+        max-width: 550px;
+        width: 100%;
+        padding: 3rem 2.5rem;
+        text-align: center;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.02);
+        animation: slideInUp 0.6s ease-out;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .error-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 30px -12px rgba(0,0,0,0.2);
+    }
+    
+    .error-icon {
+        font-size: 5rem;
+        color: var(--primary);
+        margin-bottom: 1.5rem;
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+    }
+    
+    .error-code {
+        font-size: 6rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        letter-spacing: -2px;
+    }
+    
+    .error-title {
+        font-size: 1.75rem;
+        color: var(--dark);
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+    
+    .error-message {
+        color: var(--gray);
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin: 1.5rem 0;
+    }
+    
+    .error-actions .btn {
+        min-width: 160px;
+        transition: all 0.3s ease;
+    }
+    
+    .error-actions .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .error-actions .btn:active {
+        transform: translateY(0);
+    }
+    
+    .error-note {
+        text-align: left;
+        padding-top: 1rem;
+        margin-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .error-note p {
+        margin: 0.5rem 0;
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .error-note i {
+        color: var(--primary);
+    }
+    
+    .benefits-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .benefit-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--gray);
+        padding: 0.5rem;
+        background: #f8fafc;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .benefit-item:hover {
+        transform: translateX(5px);
+        background: #f1f5f9;
+    }
+    
+    .benefit-item i {
+        color: var(--success);
+        font-size: 1rem;
+    }
+    
+    @media (max-width: 560px) {
+        .error-container {
+            padding: 1rem;
+        }
+        
+        .error-card {
+            padding: 2rem 1.5rem;
+        }
+        
+        .error-code {
+            font-size: 4rem;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+        }
+        
+        .error-actions {
+            flex-direction: column;
+        }
+        
+        .error-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="error-container">
     <div class="error-card">
@@ -12,21 +200,39 @@
         <h2 class="error-title">Free Limit Reached</h2>
         
         {% if not current_user.is_authenticated %}
-            <p class="error-message">You've used your 3 free predictions. Create an account for unlimited grading!</p>
+            <p class="error-message">You've used all 3 free predictions. Create a free account for unlimited grading and track your history!</p>
             <div class="error-actions">
-                <a href="{{ url_for('register_page') }}" class="btn btn-primary">
+                <a href="{{ url_for('auth.register_page') }}" class="btn btn-primary">
                     <i class="fas fa-user-plus"></i> Sign Up Free
                 </a>
-                <a href="{{ url_for('login_page') }}" class="btn btn-secondary">
+                <a href="{{ url_for('auth.login_page') }}" class="btn btn-secondary">
                     <i class="fas fa-sign-in-alt"></i> Log In
                 </a>
             </div>
             <div class="error-note">
-                <i class="fas fa-info-circle"></i>
-                <p>Registered users get unlimited predictions and can view their history.</p>
+                <i class="fas fa-gift"></i>
+                <p>Registered users get:</p>
+                <div class="benefits-list">
+                    <div class="benefit-item">
+                        <i class="fas fa-infinity"></i>
+                        <span>Unlimited fruit grading</span>
+                    </div>
+                    <div class="benefit-item">
+                        <i class="fas fa-history"></i>
+                        <span>Complete grading history</span>
+                    </div>
+                    <div class="benefit-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Personal dashboard with stats</span>
+                    </div>
+                    <div class="benefit-item">
+                        <i class="fas fa-save"></i>
+                        <span>Save and share results</span>
+                    </div>
+                </div>
             </div>
         {% else %}
-            <p class="error-message">You've reached your daily limit. Please try again tomorrow.</p>
+            <p class="error-message">You've reached your daily limit. Please try again tomorrow for more grading opportunities.</p>
             <div class="error-actions">
                 <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
                     <i class="fas fa-chart-line"></i> View Dashboard
@@ -34,6 +240,11 @@
                 <a href="{{ url_for('index') }}" class="btn btn-secondary">
                     <i class="fas fa-home"></i> Back to Home
                 </a>
+            </div>
+            <div class="error-note">
+                <i class="fas fa-info-circle"></i>
+                <p>Your history and stats are still available in your dashboard.</p>
+                <p><i class="fas fa-clock"></i> Daily limit resets at midnight UTC.</p>
             </div>
         {% endif %}
     </div>

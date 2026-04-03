@@ -681,8 +681,8 @@
         <h2>Save Your Result</h2>
         <p>Create a free account to save this grading result and track your history!</p>
         <div class="modal-buttons">
-            <a href="{{ url_for('auth.login_page') }}" class="btn btn-primary">Login</a>
-            <a href="{{ url_for('auth.register_page') }}" class="btn btn-secondary">Sign Up</a>
+            <button onclick="redirectWithPredictionId('/login')" class="btn btn-primary">Login</button>
+            <button onclick="redirectWithPredictionId('/register')" class="btn btn-secondary">Sign Up</button>
         </div>
         <button class="btn-link" id="save-later-btn">Maybe later</button>
     </div>
@@ -741,11 +741,75 @@
 
 {% block extra_js %}
 <script>
+// Variables for prediction transfer
+let currentPredictionId = null;
+let pendingPredictionId = null;
+
+// Function to redirect with prediction ID for transfer
+function redirectWithPredictionId(route) {
+    if (currentPredictionId) {
+        sessionStorage.setItem('pendingPredictionId', currentPredictionId);
+    }
+    window.location.href = route;
+}
+
+// Function to transfer pending prediction after login
+async function transferPendingPrediction() {
+    const pendingId = sessionStorage.getItem('pendingPredictionId');
+    if (!pendingId) return false;
+    
+    try {
+        const response = await fetch('/api/transfer-prediction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prediction_id: parseInt(pendingId) })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            sessionStorage.removeItem('pendingPredictionId');
+            currentPredictionId = data.prediction_id;
+            
+            // Show success flash message
+            showFlashMessage('Result saved to your history!', 'success');
+            return true;
+        }
+    } catch (error) {
+        console.error('Error transferring prediction:', error);
+    }
+    return false;
+}
+
+// Function to show flash message
+function showFlashMessage(message, category = 'info') {
+    const container = document.getElementById('flash-container');
+    if (!container) return;
+    
+    const flashDiv = document.createElement('div');
+    flashDiv.className = `flash-message flash-${category}`;
+    let icon = category === 'success' ? 'check-circle' : 
+               category === 'error' ? 'exclamation-circle' : 'info-circle';
+    
+    flashDiv.innerHTML = `
+        <i class="fas fa-${icon}"></i>
+        <span class="flash-text">${message}</span>
+        <button class="flash-close" onclick="this.parentElement.remove()">&times;</button>
+    `;
+    container.appendChild(flashDiv);
+    
+    setTimeout(() => {
+        if (flashDiv && flashDiv.parentElement) flashDiv.remove();
+    }, 5000);
+}
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('Results page loaded');
     
-    // First check if user is logged in
+    // First, check if there's a pending prediction to transfer
+    await transferPendingPrediction();
+    
+    // Check if user is logged in
     let isLoggedIn = false;
     try {
         const sessionRes = await fetch('/api/check-session');
@@ -756,14 +820,29 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('Session check error:', error);
     }
     
-    // Load result from sessionStorage
-    const resultData = JSON.parse(sessionStorage.getItem('gradingResult') || '{}');
+    // Load result from sessionStorage or URL parameter
+    let resultData = JSON.parse(sessionStorage.getItem('gradingResult') || '{}');
     const imageData = sessionStorage.getItem('gradingImage') || '';
+    currentPredictionId = sessionStorage.getItem('predictionId') || null;
+    
+    // If no result in sessionStorage, try to load from API using prediction ID
+    if ((!resultData.success || !resultData.fruit_type) && currentPredictionId) {
+        try {
+            const response = await fetch(`/api/prediction/${currentPredictionId}`);
+            const data = await response.json();
+            if (data.success && data.prediction) {
+                resultData = data.prediction;
+                resultData.success = true;
+            }
+        } catch (error) {
+            console.error('Error loading prediction from API:', error);
+        }
+    }
     
     console.log('Result data:', resultData);
+    console.log('Prediction ID:', currentPredictionId);
     
     if (!resultData.success && !resultData.fruit_type) {
-        // No result found, redirect to upload page
         console.log('No result data found, redirecting to upload');
         window.location.href = '/upload';
         return;
@@ -849,10 +928,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             e.stopPropagation();
             showImageModal(imageData);
         };
-        
-        resultImage.onerror = function() {
-            console.log('Image load error, using placeholder');
-            resultImage.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="%236366f1"%3E%3Cpath d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h-2v-2h2v2zm0-4h-2V7h2v6z"/%3E%3C/svg%3E';
+    } else if (resultData.image_data) {
+        const imageSrc = resultData.image_data.startsWith('data:') ? 
+            resultData.image_data : `data:image/jpeg;base64,${resultData.image_data}`;
+        resultImage.src = imageSrc;
+        imageContainer.style.cursor = 'pointer';
+        imageContainer.onclick = function(e) {
+            e.stopPropagation();
+            showImageModal(imageSrc);
         };
     }
     
@@ -865,7 +948,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         gradeConfidences = resultData.grade_confidence;
     }
     if (Object.keys(gradeConfidences).length === 0 && resultData.confidence_scores) {
-        gradeConfidences = resultData.confidence_scores;
+        // Extract just the grade scores for this fruit
+        const fruitPrefix = `${fruitType}_`;
+        gradeConfidences = { 'A': 0, 'B': 0, 'C': 0 };
+        for (const [key, val] of Object.entries(resultData.confidence_scores)) {
+            if (key.startsWith(fruitPrefix)) {
+                const gradeLetter = key.split('_').pop();
+                if (gradeConfidences[gradeLetter] !== undefined) {
+                    gradeConfidences[gradeLetter] = val;
+                }
+            }
+        }
     }
     
     console.log('Grade confidences:', gradeConfidences);
@@ -913,20 +1006,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     const timeElement = document.getElementById('processing-time');
     timeElement.innerHTML = `<i class="fas fa-chart-line"></i> Processing time: ${processingTime.toFixed(2)} seconds`;
     
-    // Show share section for good results
-    if (predictedGrade === 'A' && confidence > 0.85) {
-        const shareSection = document.getElementById('share-section');
-        shareSection.style.display = 'block';
-        
-        // Setup share links
-        const text = `I just graded a ${fruitType} with FruitSight AI and got Grade ${predictedGrade}! 🍎✨`;
-        const url = window.location.href;
-        
-        document.getElementById('share-twitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-        document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`;
-        document.getElementById('share-linkedin').href = `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(url)}&title=${encodeURIComponent('FruitSight Grading Result')}&summary=${encodeURIComponent(text)}`;
-    }
-    
     // Save button functionality
     const saveBtn = document.getElementById('save-result-btn');
     const saveModal = document.getElementById('save-modal');
@@ -948,9 +1027,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Only show save button for unauthenticated users
-    if (!isLoggedIn) {
+    if (!isLoggedIn && !currentPredictionId) {
         saveBtn.style.display = 'inline-flex';
         saveBtn.addEventListener('click', () => showModal(saveModal));
+    } else if (!isLoggedIn && currentPredictionId) {
+        // Result already saved, don't show save button
+        saveBtn.style.display = 'none';
     } else {
         saveBtn.style.display = 'none';
     }

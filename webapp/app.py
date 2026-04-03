@@ -470,6 +470,38 @@ def api_get_profile():
         'total_predictions': len(predictions),
         'avg_confidence': avg_confidence
     })
+    
+
+# ============================================
+# Transfer Anonymous Prediction
+# ============================================
+
+@app.route('/api/transfer-prediction', methods=['POST'])
+@login_required
+def transfer_prediction():
+    """Transfer anonymous prediction to logged-in user"""
+    data = request.get_json()
+    prediction_id = data.get('prediction_id')
+    
+    if not prediction_id:
+        return jsonify({'success': False, 'error': 'No prediction ID provided'}), 400
+    
+    # Get the anonymous prediction
+    prediction = Prediction.query.filter_by(id=prediction_id, user_id=None).first()
+    
+    if not prediction:
+        return jsonify({'success': False, 'error': 'Prediction not found or already transferred'}), 404
+    
+    # Transfer to current user
+    prediction.user_id = current_user.id
+    prediction.session_id = None
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'Prediction saved to your account!',
+        'prediction_id': prediction.id
+    })
 
 # ============================================
 # Health Check

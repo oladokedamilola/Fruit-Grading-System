@@ -2,6 +2,211 @@
 
 {% block title %}Page Not Found - FruitSight{% endblock %}
 
+{% block extra_css %}
+<style>
+    .error-container {
+        min-height: calc(100vh - 300px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .error-card {
+        background: white;
+        border-radius: 1.5rem;
+        max-width: 550px;
+        width: 100%;
+        padding: 3rem 2.5rem;
+        text-align: center;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.02);
+        animation: slideInUp 0.6s ease-out;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .error-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 30px -12px rgba(0,0,0,0.2);
+    }
+    
+    .error-icon {
+        font-size: 5rem;
+        color: var(--warning);
+        margin-bottom: 1.5rem;
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+    
+    .error-code {
+        font-size: 6rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--warning), #d97706);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        letter-spacing: -2px;
+    }
+    
+    .error-title {
+        font-size: 1.75rem;
+        color: var(--dark);
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+    
+    .error-message {
+        color: var(--gray);
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin: 1.5rem 0;
+    }
+    
+    .error-actions .btn {
+        min-width: 160px;
+        transition: all 0.3s ease;
+    }
+    
+    .error-actions .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .error-actions .btn:active {
+        transform: translateY(0);
+    }
+    
+    .error-suggestions {
+        text-align: left;
+        padding-top: 1rem;
+        margin-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .error-suggestions p {
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .error-suggestions ul {
+        list-style: none;
+        padding-left: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .error-suggestions li {
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .error-suggestions li:hover {
+        transform: translateX(5px);
+    }
+    
+    .error-suggestions li i {
+        color: var(--primary);
+        font-size: 0.75rem;
+    }
+    
+    .error-suggestions li a {
+        color: var(--primary);
+        text-decoration: none;
+        transition: all 0.3s ease;
+        flex: 1;
+    }
+    
+    .error-suggestions li a:hover {
+        color: var(--primary-dark);
+    }
+    
+    @media (max-width: 560px) {
+        .error-container {
+            padding: 1rem;
+        }
+        
+        .error-card {
+            padding: 2rem 1.5rem;
+        }
+        
+        .error-code {
+            font-size: 4rem;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+        }
+        
+        .error-actions {
+            flex-direction: column;
+        }
+        
+        .error-actions .btn {
+            width: 100%;
+        }
+    }
+    
+    /* Search animation */
+    @keyframes searchPulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+    
+    .fa-search {
+        animation: searchPulse 2s ease-in-out infinite;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="error-container">
     <div class="error-card">
@@ -10,7 +215,7 @@
         </div>
         <h1 class="error-code">404</h1>
         <h2 class="error-title">Page Not Found</h2>
-        <p class="error-message">Oops! The page you're looking for doesn't exist or has been moved.</p>
+        <p class="error-message">Oops! The page you're looking for doesn't exist or has been moved to a new location.</p>
         <div class="error-actions">
             <a href="{{ url_for('index') }}" class="btn btn-primary">
                 <i class="fas fa-home"></i> Back to Home
@@ -20,11 +225,12 @@
             </a>
         </div>
         <div class="error-suggestions">
-            <p>You might want to try:</p>
+            <p><i class="fas fa-lightbulb"></i> You might want to try:</p>
             <ul>
-                <li><a href="{{ url_for('index') }}">Home Page</a></li>
-                <li><a href="{{ url_for('upload_page') }}">Grade a Fruit</a></li>
-                <li><a href="{{ url_for('dashboard') }}">Your Dashboard</a></li>
+                <li><i class="fas fa-arrow-right"></i> <a href="{{ url_for('index') }}">Home Page</a></li>
+                <li><i class="fas fa-arrow-right"></i> <a href="{{ url_for('upload_page') }}">Grade a Fruit</a></li>
+                <li><i class="fas fa-arrow-right"></i> <a href="{{ url_for('dashboard') }}">Your Dashboard</a></li>
+                <li><i class="fas fa-arrow-right"></i> <a href="{{ url_for('history_page') }}">Grading History</a></li>
             </ul>
         </div>
     </div>

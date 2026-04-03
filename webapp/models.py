@@ -42,6 +42,7 @@ class Prediction(db.Model):
     image_filename = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     ip_address = db.Column(db.String(50), nullable=True)
+    session_id = db.Column(db.String(100), nullable=True)  # For anonymous tracking
     
     def to_dict(self):
         return {

@@ -2,6 +2,198 @@
 
 {% block title %}File Too Large - FruitSight{% endblock %}
 
+{% block extra_css %}
+<style>
+    .error-container {
+        min-height: calc(100vh - 300px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .error-card {
+        background: white;
+        border-radius: 1.5rem;
+        max-width: 550px;
+        width: 100%;
+        padding: 3rem 2.5rem;
+        text-align: center;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.02);
+        animation: slideInUp 0.6s ease-out;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .error-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 30px -12px rgba(0,0,0,0.2);
+    }
+    
+    .error-icon {
+        font-size: 5rem;
+        color: var(--warning);
+        margin-bottom: 1.5rem;
+        animation: shake 3s ease-in-out infinite;
+    }
+    
+    @keyframes shake {
+        0%, 100% {
+            transform: rotate(0deg);
+        }
+        25% {
+            transform: rotate(-10deg);
+        }
+        75% {
+            transform: rotate(10deg);
+        }
+    }
+    
+    .error-code {
+        font-size: 6rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--warning), #d97706);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        letter-spacing: -2px;
+    }
+    
+    .error-title {
+        font-size: 1.75rem;
+        color: var(--dark);
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+    
+    .error-message {
+        color: var(--gray);
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin: 1.5rem 0;
+    }
+    
+    .error-actions .btn {
+        min-width: 180px;
+        transition: all 0.3s ease;
+    }
+    
+    .error-actions .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .error-actions .btn:active {
+        transform: translateY(0);
+    }
+    
+    .error-tips {
+        text-align: left;
+        padding-top: 1rem;
+        margin-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .error-tips p {
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .error-tips ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .error-tips li {
+        margin: 0.5rem 0;
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .error-tips li:hover {
+        transform: translateX(5px);
+    }
+    
+    .error-tips li i {
+        color: var(--success);
+        font-size: 0.875rem;
+    }
+    
+    .size-badge {
+        display: inline-block;
+        background: #e2e8f0;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--dark);
+        margin-top: 1rem;
+    }
+    
+    @media (max-width: 560px) {
+        .error-container {
+            padding: 1rem;
+        }
+        
+        .error-card {
+            padding: 2rem 1.5rem;
+        }
+        
+        .error-code {
+            font-size: 4rem;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+        }
+        
+        .error-actions {
+            flex-direction: column;
+        }
+        
+        .error-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="error-container">
     <div class="error-card">
@@ -10,7 +202,10 @@
         </div>
         <h1 class="error-code">413</h1>
         <h2 class="error-title">File Too Large</h2>
-        <p class="error-message">The uploaded file exceeds the 16MB size limit.</p>
+        <p class="error-message">The uploaded file exceeds the 16MB size limit. Please choose a smaller image.</p>
+        <div class="size-badge">
+            <i class="fas fa-database"></i> Maximum size: 16MB
+        </div>
         <div class="error-actions">
             <a href="{{ url_for('upload_page') }}" class="btn btn-primary">
                 <i class="fas fa-camera"></i> Try Another Image
@@ -20,11 +215,12 @@
             </a>
         </div>
         <div class="error-tips">
-            <p><i class="fas fa-lightbulb"></i> Tips:</p>
+            <p><i class="fas fa-lightbulb"></i> Tips to reduce file size:</p>
             <ul>
-                <li>Compress your image before uploading</li>
-                <li>Use JPG format for smaller file sizes</li>
-                <li>Resize large images to under 16MB</li>
+                <li><i class="fas fa-check-circle"></i> Compress your image using online tools</li>
+                <li><i class="fas fa-check-circle"></i> Use JPG format instead of PNG</li>
+                <li><i class="fas fa-check-circle"></i> Resize large images to lower dimensions</li>
+                <li><i class="fas fa-check-circle"></i> Crop unnecessary parts of the image</li>
             </ul>
         </div>
     </div>

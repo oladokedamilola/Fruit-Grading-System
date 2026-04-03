@@ -2,6 +2,224 @@
 
 {% block title %}Access Denied - FruitSight{% endblock %}
 
+{% block extra_css %}
+<style>
+    .error-container {
+        min-height: calc(100vh - 300px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        animation: fadeIn 0.6s ease-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .error-card {
+        background: white;
+        border-radius: 1.5rem;
+        max-width: 550px;
+        width: 100%;
+        padding: 3rem 2.5rem;
+        text-align: center;
+        box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.02);
+        animation: slideInUp 0.6s ease-out;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .error-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 25px 30px -12px rgba(0,0,0,0.2);
+    }
+    
+    .error-icon {
+        font-size: 5rem;
+        color: var(--danger);
+        margin-bottom: 1.5rem;
+        animation: pulse 2s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.1);
+        }
+    }
+    
+    .error-code {
+        font-size: 6rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--danger), #dc2626);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        letter-spacing: -2px;
+    }
+    
+    .error-title {
+        font-size: 1.75rem;
+        color: var(--dark);
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+    
+    .error-message {
+        color: var(--gray);
+        margin-bottom: 2rem;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .error-auth {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin: 1.5rem 0;
+        animation: fadeInUp 0.5s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .error-auth p {
+        color: var(--dark);
+        margin-bottom: 1rem;
+        font-weight: 500;
+    }
+    
+    .error-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin: 1.5rem 0;
+    }
+    
+    .error-actions .btn {
+        min-width: 160px;
+        transition: all 0.3s ease;
+    }
+    
+    .error-actions .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .error-actions .btn:active {
+        transform: translateY(0);
+    }
+    
+    .error-suggestions,
+    .error-note,
+    .error-tips {
+        text-align: left;
+        padding-top: 1rem;
+        margin-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+        font-size: 0.875rem;
+    }
+    
+    .error-suggestions p,
+    .error-note p,
+    .error-tips p {
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        color: var(--dark);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .error-suggestions ul,
+    .error-tips ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    .error-suggestions li,
+    .error-tips li {
+        margin: 0.5rem 0;
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .error-suggestions li i,
+    .error-tips li i {
+        color: var(--primary);
+        font-size: 0.75rem;
+    }
+    
+    .error-suggestions li a {
+        color: var(--primary);
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .error-suggestions li a:hover {
+        color: var(--primary-dark);
+        transform: translateX(5px);
+        display: inline-block;
+    }
+    
+    @media (max-width: 560px) {
+        .error-container {
+            padding: 1rem;
+        }
+        
+        .error-card {
+            padding: 2rem 1.5rem;
+        }
+        
+        .error-code {
+            font-size: 4rem;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+        }
+        
+        .error-actions {
+            flex-direction: column;
+        }
+        
+        .error-actions .btn {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="error-container">
     <div class="error-card">
@@ -10,18 +228,22 @@
         </div>
         <h1 class="error-code">403</h1>
         <h2 class="error-title">Access Denied</h2>
-        <p class="error-message">You don't have permission to access this page.</p>
+        <p class="error-message">You don't have permission to access this page. This area is restricted to authorized users only.</p>
         
         {% if not current_user.is_authenticated %}
             <div class="error-auth">
-                <p>Please log in to continue:</p>
+                <p><i class="fas fa-sign-in-alt"></i> Please log in to continue:</p>
                 <div class="error-actions">
-                    <a href="{{ url_for('login_page') }}" class="btn btn-primary">
+                    <a href="{{ url_for('auth.login_page') }}" class="btn btn-primary">
                         <i class="fas fa-sign-in-alt"></i> Log In
                     </a>
-                    <a href="{{ url_for('register_page') }}" class="btn btn-secondary">
-                        <i class="fas fa-user-plus"></i> Sign Up
+                    <a href="{{ url_for('auth.register_page') }}" class="btn btn-secondary">
+                        <i class="fas fa-user-plus"></i> Sign Up Free
                     </a>
+                </div>
+                <div class="error-note">
+                    <i class="fas fa-info-circle"></i>
+                    <p>Create a free account to access all features and track your grading history.</p>
                 </div>
             </div>
         {% else %}
@@ -32,6 +254,14 @@
                 <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
                     <i class="fas fa-chart-line"></i> Go to Dashboard
                 </a>
+            </div>
+            <div class="error-suggestions">
+                <p><i class="fas fa-lightbulb"></i> You might want to:</p>
+                <ul>
+                    <li><i class="fas fa-arrow-right"></i> Check if you're logged into the correct account</li>
+                    <li><i class="fas fa-arrow-right"></i> <a href="{{ url_for('upload_page') }}">Grade a fruit</a> as a guest</li>
+                    <li><i class="fas fa-arrow-right"></i> <a href="{{ url_for('index') }}">Return to homepage</a></li>
+                </ul>
             </div>
         {% endif %}
     </div>

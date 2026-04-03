@@ -28,6 +28,7 @@ webapp/static/images/uploads/
 # Environment variables
 .env
 .env.local
+.env.production
 
 # IDE
 .vscode/

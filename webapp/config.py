@@ -3,6 +3,7 @@ Configuration Module for Fruit Grading System
 """
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,6 +20,7 @@ class Config:
     
     # Upload settings
     MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
+    UPLOAD_FOLDER = os.getenv('UPLOAD_FOLDER', '/tmp/uploads')
     
     # Model settings
     MODEL_PATH = os.getenv('MODEL_PATH', 'ml/models/fruit_grading_simple_cnn.keras')
@@ -39,9 +41,8 @@ class Config:
     @classmethod
     def init_app(cls, app):
         """Initialize application with config"""
-        upload_folder = os.getenv('UPLOAD_FOLDER', '/tmp/uploads')
-        os.makedirs(upload_folder, exist_ok=True)
-        app.config['UPLOAD_FOLDER'] = upload_folder
+        os.makedirs(cls.UPLOAD_FOLDER, exist_ok=True)
+        app.config['UPLOAD_FOLDER'] = cls.UPLOAD_FOLDER
 
 
 class DevelopmentConfig(Config):
@@ -56,19 +57,15 @@ class ProductionConfig(Config):
     DEBUG = False
     
     # Render provides DATABASE_URL (PostgreSQL)
-    DATABASE_URL = os.environ.get('DATABASE_URL')
-    if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
-        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-    SQLALCHEMY_DATABASE_URI = DATABASE_URL or 'sqlite:///instance/fruit_grading.db'
+    @property
+    def SQLALCHEMY_DATABASE_URI(self):
+        DATABASE_URL = os.environ.get('DATABASE_URL')
+        if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+            DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+        return DATABASE_URL or 'sqlite:///instance/fruit_grading.db'
     
-    # Use /tmp for ephemeral storage
+    # Use /tmp for ephemeral storage on Render
     UPLOAD_FOLDER = '/tmp/uploads'
-    
-    @classmethod
-    def init_app(cls, app):
-        super().init_app(app)
-        # Ensure upload directory exists
-        os.makedirs(cls.UPLOAD_FOLDER, exist_ok=True)
 
 
 # Environment selection
