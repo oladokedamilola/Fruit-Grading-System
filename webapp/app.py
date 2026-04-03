@@ -295,7 +295,7 @@ def api_check_session():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Predict fruit grade with usage limits"""
+    """Predict fruit grade with usage limits - Memory-based (no temp files)"""
     
     # Check usage limits
     if current_user.is_authenticated:
@@ -311,7 +311,7 @@ def predict():
         if usage_count >= 3:
             return jsonify({
                 'success': False,
-                'error': 'Anonymous usage limit reached...',
+                'error': 'Anonymous usage limit reached. Please login or register for unlimited access.',
                 'limit_reached': True,
                 'login_required': True
             }), 403
@@ -326,30 +326,35 @@ def predict():
         return jsonify({'success': False, 'error': 'No file selected'}), 400
     
     if not allowed_file(file.filename):
-        return jsonify({'success': False, 'error': 'File type not allowed'}), 400
+        return jsonify({'success': False, 'error': 'File type not allowed. Allowed: JPG, JPEG, PNG'}), 400
     
     try:
-        # Save temporarily
-        filename = secure_filename(file.filename)
-        temp_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(temp_path)
+        # Read file into memory (NO TEMP FILE!)
+        file_bytes = file.read()
         
-        # Preprocess image
-        processed_image = image_processor.preprocess(temp_path)
-        if processed_image is None:
-            os.remove(temp_path)
-            return jsonify({'success': False, 'error': 'Failed to process image'}), 500
+        # Convert to numpy array directly from memory
+        nparr = np.frombuffer(file_bytes, np.uint8)
+        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if img is None:
+            return jsonify({'success': False, 'error': 'Failed to decode image'}), 400
+        
+        # Process the image
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.resize(img, (224, 224))
+        img = img.astype(np.float32) / 255.0
+        img = np.expand_dims(img, axis=0)
         
         # Run inference
         if model is None:
-            os.remove(temp_path)
             return jsonify({'success': False, 'error': 'Model not loaded'}), 500
         
-        predictions = model.predict(processed_image)
+        predictions = model.predict(img)
         result = image_processor.get_prediction_result(predictions)
         result['success'] = True
         
-        # Save prediction with image file
+        # Save prediction to database (using the file bytes we already have)
+        # Reset file pointer to beginning for base64 encoding
         file.seek(0)
         prediction_id = save_prediction(
             user_id=current_user.id if current_user.is_authenticated else None,
@@ -365,9 +370,6 @@ def predict():
             remaining = 2 - get_anonymous_usage_count(session_id)
             result['remaining_predictions'] = remaining if remaining >= 0 else 0
         
-        # Clean up temp file
-        os.remove(temp_path)
-        
         # Flash message for logged-in users
         if current_user.is_authenticated:
             flash(f'Your {result["fruit_type"]} was graded as Grade {result["grade"]}!', 'success')
@@ -377,7 +379,8 @@ def predict():
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
         return jsonify({'success': False, 'error': f'Prediction error: {str(e)}'}), 500
-
+    
+    
 @app.route('/results')
 def results_page():
     """Results page"""
