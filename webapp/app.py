@@ -15,7 +15,8 @@ from flask_migrate import Migrate
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-
+import numpy as np
+import cv2
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
