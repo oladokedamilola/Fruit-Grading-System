@@ -330,10 +330,13 @@ def predict():
         return jsonify({'success': False, 'error': 'File type not allowed. Allowed: JPG, JPEG, PNG'}), 400
     
     try:
-        # Read file into memory (NO TEMP FILE!)
+        # Read file into memory
         file_bytes = file.read()
         
-        # Convert to numpy array directly from memory
+        # Convert to base64 for response
+        image_base64 = base64.b64encode(file_bytes).decode('utf-8')
+        
+        # Convert to numpy array for processing
         nparr = np.frombuffer(file_bytes, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
         
@@ -353,9 +356,10 @@ def predict():
         predictions = model.predict(img)
         result = image_processor.get_prediction_result(predictions)
         result['success'] = True
+        result['image_base64'] = image_base64  # Add image to response
         
-        # Save prediction to database (using the file bytes we already have)
-        # Reset file pointer to beginning for base64 encoding
+        # Save prediction to database
+        # Reset file pointer for database saving
         file.seek(0)
         prediction_id = save_prediction(
             user_id=current_user.id if current_user.is_authenticated else None,
@@ -380,7 +384,7 @@ def predict():
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
         return jsonify({'success': False, 'error': f'Prediction error: {str(e)}'}), 500
-    
+        
     
 @app.route('/results')
 def results_page():

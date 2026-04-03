@@ -545,6 +545,87 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Show error message
+    function showError(message) {
+        console.error('Error:', message);
+        
+        // Create a temporary error toast
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 14px;
+            max-width: 300px;
+        `;
+        toast.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+    
+    // Show success message
+    function showSuccess(message) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 10000;
+            animation: slideInRight 0.3s ease-out;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 14px;
+            max-width: 300px;
+        `;
+        toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOutRight 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+    
+    // Add animation styles
+    const animationStyle = document.createElement('style');
+    animationStyle.textContent = `
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    `;
+    document.head.appendChild(animationStyle);
+    
     // Handle file selection with animation
     function handleSelectedFile(file) {
         // Validate file type
@@ -585,12 +666,6 @@ document.addEventListener('DOMContentLoaded', function() {
             showError('Error reading file. Please try again.');
         };
         reader.readAsDataURL(file);
-    }
-    
-    // Show error message
-    function showError(message) {
-        // You can use a toast notification here
-        alert(message);
     }
     
     // Change image function
@@ -635,7 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Animate steps
         setTimeout(() => {
-            if (loadingText) loadingText.textContent = 'Uploading your image...';
+            if (loadingText) loadingText.textContent = 'Preparing your image...';
         }, 0);
         
         setTimeout(() => {
@@ -654,44 +729,76 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             console.log('Uploading file to /predict...');
+            
+            // Add timeout to fetch
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+            
             const response = await fetch('/predict', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                signal: controller.signal
             });
             
+            clearTimeout(timeoutId);
+            
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server error response:', errorText);
+                throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
+            }
+            
             const data = await response.json();
-            console.log('Response:', data);
+            console.log('Response data:', data);
             
             // Hide loading modal
             hideModal(loadingModal);
             
-            // Handle response with animation
+            // Handle response
             if (data.limit_reached) {
                 showModal(loginModal);
             } else if (data.error) {
                 showError('Error: ' + data.error);
             } else if (data.success) {
-                // Store result
+                // Store results from response
                 sessionStorage.setItem('gradingResult', JSON.stringify(data));
+                sessionStorage.setItem('predictionId', data.prediction_id);
                 
-                // Store image as data URL
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    sessionStorage.setItem('gradingImage', e.target.result);
-                    // Add transition effect before redirect
-                    document.body.style.opacity = '0';
-                    setTimeout(() => {
-                        window.location.href = '/results';
-                    }, 300);
-                };
-                reader.readAsDataURL(currentFile);
+                // Store image from response if available
+                if (data.image_base64) {
+                    sessionStorage.setItem('gradingImage', `data:image/jpeg;base64,${data.image_base64}`);
+                    showSuccess('Analysis complete! Redirecting...');
+                } else {
+                    // Fallback: read the file again
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        sessionStorage.setItem('gradingImage', e.target.result);
+                    };
+                    reader.readAsDataURL(currentFile);
+                }
+                
+                // Add transition effect before redirect
+                document.body.style.transition = 'opacity 0.3s';
+                document.body.style.opacity = '0';
+                setTimeout(() => {
+                    window.location.href = '/results';
+                }, 500);
             } else {
                 showError('Unexpected response from server');
             }
         } catch (error) {
             console.error('Upload error:', error);
             hideModal(loadingModal);
-            showError('Upload failed: ' + error.message);
+            
+            if (error.name === 'AbortError') {
+                showError('Request timed out. Please try again with a smaller image.');
+            } else if (error.message.includes('Failed to fetch')) {
+                showError('Cannot connect to server. Please check your internet connection and try again.');
+            } else {
+                showError('Upload failed: ' + error.message);
+            }
         }
     }
     
@@ -843,4 +950,3 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Upload page initialized successfully');
 });
 </script>
-{% endblock %}
