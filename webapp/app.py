@@ -513,6 +513,24 @@ def health_check():
         'timestamp': datetime.now().isoformat()
     })
 
+
+
+@app.route('/debug-api')
+def debug_api():
+    """Debug endpoint to test ML API connection"""
+    import requests
+    try:
+        # Test health
+        health_resp = requests.get(f"{app.config.get('ML_API_URL')}/health", timeout=10)
+        
+        return jsonify({
+            'api_url': app.config.get('ML_API_URL'),
+            'health_status': health_resp.status_code,
+            'health_response': health_resp.json() if health_resp.ok else None,
+            'ml_client_healthy': ml_client.health_check()
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 # ============================================
 # Error Handlers
 # ============================================
