@@ -5,6 +5,7 @@ ML API Client - Communicates with the Fruit Grading API server
 import requests
 import base64
 import logging
+import sys
 from flask import current_app, has_app_context
 
 logger = logging.getLogger(__name__)
@@ -31,43 +32,51 @@ class MLAPIClient:
     def predict(self, image_file):
         """
         Send image to ML API for prediction
-        
-        Args:
-            image_file: File object from Flask request
-        
-        Returns:
-            Tuple (success, result_dict, error_message)
         """
         try:
-            # Reset file pointer to beginning
+            # Reset file pointer
             image_file.seek(0)
             
-            # Prepare multipart form data
+            # Read file bytes for debugging
+            file_bytes = image_file.read()
+            print(f"[ML Client] File size: {len(file_bytes)} bytes")
+            image_file.seek(0)
+            
+            # Prepare files
             files = {
                 'file': (image_file.filename, image_file, image_file.content_type)
             }
             
-            # Make request to ML API
+            print(f"[ML Client] Calling API: {self.api_url}/predict")
+            
+            # Make request with longer timeout
             response = requests.post(
                 f"{self.api_url}/predict",
                 files=files,
                 timeout=self.timeout
             )
             
+            print(f"[ML Client] Response status: {response.status_code}")
+            
             if response.status_code == 200:
                 result = response.json()
+                print(f"[ML Client] Success! Keys: {list(result.keys())}")
                 return True, result, None
             else:
-                error_data = response.json()
-                return False, None, error_data.get('error', f'API error: {response.status_code}')
+                print(f"[ML Client] Error response: {response.text[:200]}")
+                return False, None, f"API returned {response.status_code}"
                 
         except requests.exceptions.Timeout:
-            return False, None, "ML API request timed out. Please try again."
-        except requests.exceptions.ConnectionError:
-            return False, None, "Cannot connect to ML API. Please ensure the API server is running."
+            print("[ML Client] Timeout!")
+            return False, None, "Request timed out. The API may be waking up from sleep. Please try again."
+        except requests.exceptions.ConnectionError as e:
+            print(f"[ML Client] Connection error: {e}")
+            return False, None, f"Cannot connect to ML API: {str(e)}"
         except Exception as e:
-            logger.error(f"Prediction API error: {e}")
-            return False, None, f"Prediction error: {str(e)}"
+            print(f"[ML Client] Unexpected error: {e}")
+            import traceback
+            traceback.print_exc()
+            return False, None, str(e)
     
     def get_status(self):
         """Get detailed status of ML API"""
@@ -80,14 +89,13 @@ class MLAPIClient:
             return None
 
 
-# Global variable for ML client (initialized within app context)
+# Global variable for ML client
 _ml_client = None
 
 def get_ml_client():
-    """Get or create ML client instance - call within app context"""
+    """Get or create ML client instance"""
     global _ml_client
     
-    # Try to get config from current_app if in context
     if has_app_context():
         api_url = current_app.config.get('ML_API_URL', 'http://localhost:5001')
         timeout = current_app.config.get('ML_API_TIMEOUT', 30)
@@ -95,10 +103,8 @@ def get_ml_client():
         if _ml_client is None:
             _ml_client = MLAPIClient(api_url=api_url, timeout=timeout)
         elif _ml_client.api_url != api_url:
-            # Update if config changed
             _ml_client = MLAPIClient(api_url=api_url, timeout=timeout)
     else:
-        # Fallback for when not in app context (should not happen)
         if _ml_client is None:
             _ml_client = MLAPIClient()
     
@@ -106,7 +112,7 @@ def get_ml_client():
 
 
 def init_ml_client(app):
-    """Initialize ML client with app config (call during app startup)"""
+    """Initialize ML client with app config"""
     global _ml_client
     with app.app_context():
         api_url = app.config.get('ML_API_URL', 'http://localhost:5001')

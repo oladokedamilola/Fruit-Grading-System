@@ -498,7 +498,27 @@ def transfer_prediction():
         'message': 'Prediction saved to your account!',
         'prediction_id': prediction.id
     })
-
+@app.route('/debug-predict', methods=['POST'])
+def debug_predict():
+    """Debug endpoint to test prediction without saving to DB"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file'}), 400
+    
+    file = request.files['file']
+    success, result, error = ml_client.predict(file)
+    
+    if success:
+        return jsonify({
+            'success': True,
+            'result_keys': list(result.keys()),
+            'has_image_base64': 'image_base64' in result,
+            'fruit_type': result.get('fruit_type'),
+            'grade': result.get('grade'),
+            'confidence': result.get('confidence'),
+            'full_result': result
+        })
+    else:
+        return jsonify({'success': False, 'error': error}), 500
 # ============================================
 # Health Check
 # ============================================
