@@ -15,8 +15,12 @@ services:
         value: production
       - key: SECRET_KEY
         generateValue: true
-      - key: MODEL_PATH
-        value: ml/models/fruit_grading_simple_cnn.keras
+      - key: HUGGINGFACE_API_URL
+        value: https://oladokedamilola-fruitsight-api.hf.space
+      - key: ML_API_URL
+        value: https://oladokedamilola-fruitsight-api.hf.space
+      - key: ML_API_TIMEOUT
+        value: 30
       - key: UPLOAD_FOLDER
         value: /tmp/uploads
       - key: ANONYMOUS_LIMIT
