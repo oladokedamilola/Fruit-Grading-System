@@ -3,9 +3,7 @@ ML API Client - Communicates with the Fruit Grading API server
 """
 
 import requests
-import base64
 import logging
-import sys
 from flask import current_app, has_app_context
 
 logger = logging.getLogger(__name__)
@@ -13,7 +11,7 @@ logger = logging.getLogger(__name__)
 class MLAPIClient:
     """Client for the Fruit Grading ML API"""
     
-    def __init__(self, api_url=None, timeout=30):
+    def __init__(self, api_url=None, timeout=90):
         self.api_url = api_url or 'http://localhost:5001'
         self.timeout = timeout
     
@@ -48,8 +46,9 @@ class MLAPIClient:
             }
             
             print(f"[ML Client] Calling API: {self.api_url}/predict")
+            print(f"[ML Client] File: {image_file.filename}")
             
-            # Make request with longer timeout
+            # Make request to ML API
             response = requests.post(
                 f"{self.api_url}/predict",
                 files=files,
@@ -57,18 +56,24 @@ class MLAPIClient:
             )
             
             print(f"[ML Client] Response status: {response.status_code}")
+            print(f"[ML Client] Response preview: {response.text[:200]}")
             
             if response.status_code == 200:
                 result = response.json()
                 print(f"[ML Client] Success! Keys: {list(result.keys())}")
                 return True, result, None
             else:
-                print(f"[ML Client] Error response: {response.text[:200]}")
-                return False, None, f"API returned {response.status_code}"
+                try:
+                    error_data = response.json()
+                    error_msg = error_data.get('error', f'API error: {response.status_code}')
+                except:
+                    error_msg = f'API error: {response.status_code} - {response.text[:100]}'
+                print(f"[ML Client] Error: {error_msg}")
+                return False, None, error_msg
                 
         except requests.exceptions.Timeout:
-            print("[ML Client] Timeout!")
-            return False, None, "Request timed out. The API may be waking up from sleep. Please try again."
+            print("[ML Client] Timeout - API may be waking up")
+            return False, None, "Request timed out. The API may be waking up. Please try again."
         except requests.exceptions.ConnectionError as e:
             print(f"[ML Client] Connection error: {e}")
             return False, None, f"Cannot connect to ML API: {str(e)}"
@@ -76,7 +81,8 @@ class MLAPIClient:
             print(f"[ML Client] Unexpected error: {e}")
             import traceback
             traceback.print_exc()
-            return False, None, str(e)
+            logger.error(f"Prediction API error: {e}")
+            return False, None, f"Prediction error: {str(e)}"
     
     def get_status(self):
         """Get detailed status of ML API"""
@@ -98,7 +104,7 @@ def get_ml_client():
     
     if has_app_context():
         api_url = current_app.config.get('ML_API_URL', 'http://localhost:5001')
-        timeout = current_app.config.get('ML_API_TIMEOUT', 30)
+        timeout = current_app.config.get('ML_API_TIMEOUT', 90)
         
         if _ml_client is None:
             _ml_client = MLAPIClient(api_url=api_url, timeout=timeout)
@@ -116,6 +122,6 @@ def init_ml_client(app):
     global _ml_client
     with app.app_context():
         api_url = app.config.get('ML_API_URL', 'http://localhost:5001')
-        timeout = app.config.get('ML_API_TIMEOUT', 30)
+        timeout = app.config.get('ML_API_TIMEOUT', 90)
         _ml_client = MLAPIClient(api_url=api_url, timeout=timeout)
         return _ml_client
