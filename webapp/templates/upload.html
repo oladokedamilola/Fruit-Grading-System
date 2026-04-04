@@ -63,6 +63,40 @@
         }
     }
     
+    /* Remaining Predictions Indicator */
+    .remaining-indicator {
+        text-align: center;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        padding: 0.75rem 1.5rem;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border-radius: 2rem;
+        color: white;
+        font-size: 0.875rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        width: auto;
+        margin-left: auto;
+        margin-right: auto;
+        transition: all 0.3s ease;
+    }
+    
+    .remaining-indicator i {
+        font-size: 1rem;
+        color: var(--primary);
+    }
+    
+    .remaining-indicator.warning {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid #ef4444;
+    }
+    
+    .remaining-indicator.warning i {
+        color: #ef4444;
+    }
+    
     /* Upload Area */
     .upload-area {
         background: rgba(255, 255, 255, 0.1);
@@ -347,6 +381,11 @@
         .loading-steps .step i {
             margin-bottom: 0;
         }
+        
+        .remaining-indicator {
+            font-size: 0.75rem;
+            padding: 0.5rem 1rem;
+        }
     }
     
     /* Animation for file selection */
@@ -370,6 +409,12 @@
     <div class="upload-header">
         <h1><i class="fas fa-camera"></i> Grade Your Fruit</h1>
         <p>Upload a clear photo for instant AI-powered quality analysis</p>
+    </div>
+    
+    <!-- Remaining Predictions Indicator -->
+    <div id="remaining-indicator" class="remaining-indicator" style="display: none;">
+        <i class="fas fa-chart-line"></i>
+        <span id="remaining-count">3</span> free predictions remaining today
     </div>
     
     <div class="upload-area" id="upload-area">
@@ -478,11 +523,14 @@
         <span class="close" id="close-login-modal">&times;</span>
         <i class="fas fa-exclamation-triangle modal-icon"></i>
         <h2>Free Limit Reached</h2>
-        <p>You've used your 3 free predictions. Create an account for unlimited grading and to save your history!</p>
+        <p>You've used your 3 free predictions for today. Create an account for unlimited grading and to save your history!</p>
         <div class="modal-buttons">
             <a href="{{ url_for('auth.login_page') }}" class="btn btn-primary">Login</a>
             <a href="{{ url_for('auth.register_page') }}" class="btn btn-secondary">Sign Up</a>
         </div>
+        <p style="margin-top: 1rem; font-size: 0.75rem; color: #64748b;">
+            <i class="fas fa-sync-alt"></i> Free predictions reset daily
+        </p>
     </div>
 </div>
 
@@ -524,6 +572,33 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeLoginModal = document.getElementById('close-login-modal');
     const saveModal = document.getElementById('save-modal');
     const saveLaterBtn = document.getElementById('save-later-btn');
+    
+    // Check remaining predictions on page load
+    async function checkRemainingPredictions() {
+        try {
+            const response = await fetch('/api/check-session');
+            const data = await response.json();
+            
+            if (!data.logged_in && data.remaining_predictions !== undefined) {
+                const indicator = document.getElementById('remaining-indicator');
+                const countSpan = document.getElementById('remaining-count');
+                if (indicator && countSpan) {
+                    countSpan.textContent = data.remaining_predictions;
+                    indicator.style.display = 'inline-flex';
+                    
+                    if (data.remaining_predictions === 0) {
+                        indicator.classList.add('warning');
+                    } else if (data.remaining_predictions <= 1) {
+                        indicator.classList.add('warning');
+                    } else {
+                        indicator.classList.remove('warning');
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking remaining predictions:', error);
+        }
+    }
     
     // Helper function to show modal with animation
     function showModal(modal) {
@@ -744,6 +819,22 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log('Response status:', response.status);
             
+            // Handle 403 specifically (limit reached)
+            if (response.status === 403) {
+                const data = await response.json();
+                console.log('403 Response:', data);
+                
+                // Hide loading modal
+                hideModal(loadingModal);
+                
+                if (data.limit_reached) {
+                    showModal(loginModal);
+                } else {
+                    showError(data.error || 'Access denied. Please login or register.');
+                }
+                return;
+            }
+            
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Server error response:', errorText);
@@ -778,6 +869,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     };
                     reader.readAsDataURL(currentFile);
                 }
+                
+                // Update remaining predictions indicator
+                checkRemainingPredictions();
                 
                 // Add transition effect before redirect
                 document.body.style.transition = 'opacity 0.3s';
@@ -863,7 +957,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Drag and drop functionality
+    // Drag and drop functionality with visual feedback
     if (uploadArea) {
         uploadArea.addEventListener('dragover', function(e) {
             e.preventDefault();
@@ -942,6 +1036,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     `;
     document.head.appendChild(rippleStyle);
+    
+    // Check remaining predictions on page load
+    checkRemainingPredictions();
     
     console.log('Upload page initialized successfully');
 });

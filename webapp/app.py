@@ -15,8 +15,7 @@ from flask_migrate import Migrate
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-import numpy as np
-import cv2
+
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -27,13 +26,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 INSTANCE_PATH = BASE_DIR / 'instance'
 INSTANCE_PATH.mkdir(exist_ok=True)
 
-
-import tensorflow as tf
-from webapp.model_loader import ModelLoader
-from webapp.image_processor import ImageProcessor
 from webapp.config import Config, CurrentConfig
 from webapp.models import db, User, Prediction, AnonymousUsage
 from webapp.auth import auth_bp
+from webapp.ml_client import init_ml_client
 import logging
 import base64
 
@@ -55,7 +51,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 # Initialize extensions
 db.init_app(app)
 CORS(app)
-migrate = Migrate(app, db)  # Added Flask-Migrate
+migrate = Migrate(app, db)
 
 # Setup Login Manager
 login_manager = LoginManager()
@@ -71,22 +67,23 @@ def load_user(user_id):
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
 
-# Initialize components
-model_loader = ModelLoader()
-image_processor = ImageProcessor()
+# ============================================
+# Initialize ML API client (inside app context)
+# ============================================
 
-# Load model at startup
-print("Loading model...")
-model = model_loader.load_model()
-if model:
-    print("✓ Model loaded successfully")
-else:
-    print("✗ Failed to load model")
-
-# Create tables (only if they don't exist - migrations will handle changes)
 with app.app_context():
     db.create_all()
     print("✓ Database tables verified")
+    
+    # Initialize ML client
+    ml_client = init_ml_client(app)
+    print(f"✓ ML API client initialized (URL: {app.config.get('ML_API_URL', 'http://localhost:5001')})")
+    
+    # Check ML API health
+    if ml_client.health_check():
+        print("✓ ML API is healthy")
+    else:
+        print("⚠ ML API is not responding. Predictions will not work.")
 
 # Allowed file extensions
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'}
@@ -94,35 +91,50 @@ ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+from datetime import date
+
 def get_anonymous_usage_count(session_id):
-    """Get number of predictions made by anonymous user"""
+    """Get number of predictions made by anonymous user today"""
     usage = AnonymousUsage.query.filter_by(session_id=session_id).first()
-    return usage.prediction_count if usage else 0
+    
+    # If no record exists, return 0
+    if not usage:
+        return 0
+    
+    # If the record is from a different day, reset count
+    if usage.date != date.today():
+        usage.prediction_count = 0
+        usage.date = date.today()
+        db.session.commit()
+        return 0
+    
+    return usage.prediction_count
 
 def increment_anonymous_usage(session_id):
-    """Increment anonymous user's prediction count"""
+    """Increment anonymous user's prediction count for today"""
     usage = AnonymousUsage.query.filter_by(session_id=session_id).first()
+    
     if usage:
-        usage.prediction_count += 1
-        usage.last_used = datetime.utcnow()
+        # Reset if different day
+        if usage.date != date.today():
+            usage.prediction_count = 1
+            usage.date = date.today()
+            usage.last_used = datetime.utcnow()
+        else:
+            usage.prediction_count += 1
+            usage.last_used = datetime.utcnow()
     else:
-        usage = AnonymousUsage(session_id=session_id, prediction_count=1)
+        usage = AnonymousUsage(
+            session_id=session_id, 
+            prediction_count=1,
+            date=date.today()
+        )
         db.session.add(usage)
+    
     db.session.commit()
 
-def save_prediction(user_id, session_id, result, image_file=None):
+def save_prediction(user_id, session_id, result, image_data=None):
     """Save prediction to database with image"""
-    
-    # Convert image to base64 if provided
-    image_data = None
-    if image_file:
-        try:
-            # Read the image file and convert to base64
-            image_file.seek(0)  # Reset file pointer
-            image_bytes = image_file.read()
-            image_data = base64.b64encode(image_bytes).decode('utf-8')
-        except Exception as e:
-            logger.error(f"Failed to encode image: {e}")
     
     prediction = Prediction(
         user_id=user_id,
@@ -130,7 +142,7 @@ def save_prediction(user_id, session_id, result, image_file=None):
         fruit_type=result['fruit_type'],
         grade=result['grade'],
         confidence=result['confidence'],
-        confidence_scores=json.dumps(result.get('confidence_scores', {})),
+        confidence_scores=json.dumps(result.get('grade_confidences', {})),
         grade_confidences=json.dumps(result.get('grade_confidences', {})),
         image_data=image_data,
         ip_address=request.remote_addr
@@ -291,12 +303,12 @@ def api_check_session():
         })
 
 # ============================================
-# Prediction Routes
+# Prediction Route - Uses ML API
 # ============================================
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Predict fruit grade with usage limits - Memory-based (no temp files)"""
+    """Predict fruit grade using ML API"""
     
     # Check usage limits
     if current_user.is_authenticated:
@@ -330,42 +342,20 @@ def predict():
         return jsonify({'success': False, 'error': 'File type not allowed. Allowed: JPG, JPEG, PNG'}), 400
     
     try:
-        # Read file into memory
-        file_bytes = file.read()
+        # Call ML API
+        success, result, error = ml_client.predict(file)
         
-        # Convert to base64 for response
-        image_base64 = base64.b64encode(file_bytes).decode('utf-8')
+        if not success:
+            return jsonify({'success': False, 'error': error}), 500
         
-        # Convert to numpy array for processing
-        nparr = np.frombuffer(file_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        
-        if img is None:
-            return jsonify({'success': False, 'error': 'Failed to decode image'}), 400
-        
-        # Process the image
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        img = cv2.resize(img, (224, 224))
-        img = img.astype(np.float32) / 255.0
-        img = np.expand_dims(img, axis=0)
-        
-        # Run inference
-        if model is None:
-            return jsonify({'success': False, 'error': 'Model not loaded'}), 500
-        
-        predictions = model.predict(img)
-        result = image_processor.get_prediction_result(predictions)
         result['success'] = True
-        result['image_base64'] = image_base64  # Add image to response
         
         # Save prediction to database
-        # Reset file pointer for database saving
-        file.seek(0)
         prediction_id = save_prediction(
             user_id=current_user.id if current_user.is_authenticated else None,
             session_id=session_id if not current_user.is_authenticated else None,
             result=result,
-            image_file=file
+            image_data=result.get('image_base64')
         )
         result['prediction_id'] = prediction_id
         
@@ -384,8 +374,7 @@ def predict():
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
         return jsonify({'success': False, 'error': f'Prediction error: {str(e)}'}), 500
-        
-    
+
 @app.route('/results')
 def results_page():
     """Results page"""
@@ -478,7 +467,6 @@ def api_get_profile():
         'total_predictions': len(predictions),
         'avg_confidence': avg_confidence
     })
-    
 
 # ============================================
 # Transfer Anonymous Prediction
@@ -520,7 +508,7 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'model_loaded': model is not None,
+        'ml_api_healthy': ml_client.health_check(),
         'authenticated': current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False,
         'timestamp': datetime.now().isoformat()
     })
