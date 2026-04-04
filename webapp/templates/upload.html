@@ -732,7 +732,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Add timeout to fetch
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
             
             const response = await fetch('/predict', {
                 method: 'POST',
@@ -807,7 +807,6 @@ document.addEventListener('DOMContentLoaded', function() {
         chooseFileBtn.addEventListener('click', function(e) {
             e.preventDefault();
             if (fileInput) {
-                // Add click animation
                 this.style.transform = 'scale(0.95)';
                 setTimeout(() => {
                     this.style.transform = '';
@@ -834,7 +833,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (changeImageBtn) {
         changeImageBtn.addEventListener('click', function(e) {
-            // Add click animation
             this.style.transform = 'scale(0.95)';
             setTimeout(() => {
                 this.style.transform = '';
@@ -845,7 +843,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (confirmUploadBtn) {
         confirmUploadBtn.addEventListener('click', function(e) {
-            // Add click animation
             this.style.transform = 'scale(0.95)';
             setTimeout(() => {
                 this.style.transform = '';
@@ -866,7 +863,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Drag and drop functionality with visual feedback
+    // Drag and drop functionality
     if (uploadArea) {
         uploadArea.addEventListener('dragover', function(e) {
             e.preventDefault();
@@ -882,7 +879,6 @@ document.addEventListener('DOMContentLoaded', function() {
             uploadArea.classList.remove('drag-over');
             const file = e.dataTransfer.files[0];
             if (file) {
-                // Add drop animation
                 uploadArea.style.transform = 'scale(1.02)';
                 setTimeout(() => {
                     uploadArea.style.transform = '';
