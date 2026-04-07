@@ -303,24 +303,31 @@ def api_check_session():
         })
 
 # ============================================
-# Prediction Route - Uses ML API
+# Prediction Route - Calls ML API (API handles both identification and grading)
 # ============================================
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Predict fruit grade using ML API"""
+    """Predict fruit grade using ML API (API handles identification + grading)"""
+    
+    print("\n" + "=" * 60)
+    print("🔄 PREDICTION REQUEST RECEIVED")
+    print("=" * 60)
     
     # Check usage limits
     if current_user.is_authenticated:
         user_id = current_user.id
         session_id = None
+        print(f"👤 Authenticated user: {user_id}")
     else:
         session_id = session.get('session_id')
         if not session_id:
             session_id = str(uuid.uuid4())
             session['session_id'] = session_id
+        print(f"👤 Anonymous user, session_id: {session_id}")
         
         usage_count = get_anonymous_usage_count(session_id)
+        print(f"📊 Usage count: {usage_count}")
         if usage_count >= 3:
             return jsonify({
                 'success': False,
@@ -334,6 +341,7 @@ def predict():
         return jsonify({'success': False, 'error': 'No file uploaded'}), 400
     
     file = request.files['file']
+    print(f"📁 File received: {file.filename}, type: {file.content_type}")
     
     if file.filename == '':
         return jsonify({'success': False, 'error': 'No file selected'}), 400
@@ -342,10 +350,18 @@ def predict():
         return jsonify({'success': False, 'error': 'File type not allowed. Allowed: JPG, JPEG, PNG'}), 400
     
     try:
-        # Call ML API
+        # Call ML API (handles both fruit identification and grading)
         success, result, error = ml_client.predict(file)
         
         if not success:
+            # Check if this is an unsupported fruit error
+            if 'unsupported' in str(error).lower():
+                return jsonify({
+                    'success': False,
+                    'error': error,
+                    'unsupported_fruit': True,
+                    'supported_fruits': ['apples', 'mangos', 'oranges']
+                }), 400
             return jsonify({'success': False, 'error': error}), 500
         
         result['success'] = True
@@ -369,9 +385,14 @@ def predict():
         if current_user.is_authenticated:
             flash(f'Your {result["fruit_type"]} was graded as Grade {result["grade"]}!', 'success')
         
+        print("✅ Prediction successful, returning response")
+        print("=" * 60)
         return jsonify(result)
         
     except Exception as e:
+        print(f"💥 Exception in predict: {e}")
+        import traceback
+        traceback.print_exc()
         logger.error(f"Prediction error: {str(e)}")
         return jsonify({'success': False, 'error': f'Prediction error: {str(e)}'}), 500
 
@@ -498,6 +519,7 @@ def transfer_prediction():
         'message': 'Prediction saved to your account!',
         'prediction_id': prediction.id
     })
+
 @app.route('/debug-predict', methods=['POST'])
 def debug_predict():
     """Debug endpoint to test prediction without saving to DB"""
@@ -519,6 +541,7 @@ def debug_predict():
         })
     else:
         return jsonify({'success': False, 'error': error}), 500
+
 # ============================================
 # Health Check
 # ============================================
@@ -532,8 +555,6 @@ def health_check():
         'authenticated': current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False,
         'timestamp': datetime.now().isoformat()
     })
-
-
 
 @app.route('/debug-api')
 def debug_api():
@@ -551,6 +572,7 @@ def debug_api():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 # ============================================
 # Error Handlers
 # ============================================

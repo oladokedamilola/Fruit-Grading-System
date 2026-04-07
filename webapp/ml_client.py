@@ -29,7 +29,15 @@ class MLAPIClient:
     
     def predict(self, image_file):
         """
-        Send image to ML API for prediction
+        Send image to ML API for prediction.
+        The API now handles:
+        1. Fruit identification (using pre-trained MobileNetV2)
+        2. Quality grading (using fine-tuned MobileNetV2)
+        
+        Returns:
+            Tuple (success, result_dict, error_message)
+            - On success: result contains fruit_type, grade, confidence, grade_confidences, etc.
+            - On unsupported fruit: success=False, error contains message, unsupported_fruit=True
         """
         try:
             # Reset file pointer
@@ -58,10 +66,26 @@ class MLAPIClient:
             print(f"[ML Client] Response status: {response.status_code}")
             print(f"[ML Client] Response preview: {response.text[:200]}")
             
+            # Handle successful response (200)
             if response.status_code == 200:
                 result = response.json()
                 print(f"[ML Client] Success! Keys: {list(result.keys())}")
                 return True, result, None
+            
+            # Handle unsupported fruit (400 with unsupported_fruit flag)
+            elif response.status_code == 400:
+                try:
+                    error_data = response.json()
+                    # Check if this is an unsupported fruit error
+                    if error_data.get('unsupported_fruit'):
+                        print(f"[ML Client] Unsupported fruit detected: {error_data.get('detected_fruit', 'unknown')}")
+                        return False, None, error_data.get('error', 'Unsupported fruit')
+                    else:
+                        return False, None, error_data.get('error', f'API error: {response.status_code}')
+                except:
+                    return False, None, f'API error: {response.status_code}'
+            
+            # Handle other error status codes
             else:
                 try:
                     error_data = response.json()
@@ -83,6 +107,44 @@ class MLAPIClient:
             traceback.print_exc()
             logger.error(f"Prediction API error: {e}")
             return False, None, f"Prediction error: {str(e)}"
+    
+    def identify_only(self, image_file):
+        """
+        Optional: Only identify fruit type (no grading)
+        Uses the /identify-only endpoint for debugging
+        
+        Args:
+            image_file: File object from Flask request
+        
+        Returns:
+            Tuple (fruit_type, confidence, is_supported, fruit_confidences)
+        """
+        try:
+            image_file.seek(0)
+            files = {
+                'file': (image_file.filename, image_file, image_file.content_type)
+            }
+            
+            response = requests.post(
+                f"{self.api_url}/identify-only",
+                files=files,
+                timeout=self.timeout
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return (
+                    result.get('fruit_type'),
+                    result.get('confidence', 0),
+                    result.get('is_supported', False),
+                    result.get('fruit_confidences', {})
+                )
+            else:
+                return None, 0, False, {}
+                
+        except Exception as e:
+            logger.error(f"Identify-only error: {e}")
+            return None, 0, False, {}
     
     def get_status(self):
         """Get detailed status of ML API"""

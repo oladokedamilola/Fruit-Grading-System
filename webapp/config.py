@@ -23,7 +23,7 @@ class Config:
     
     # Upload settings
     MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
-    
+    FRUIT_IDENTIFIER_MODEL_PATH = os.getenv('FRUIT_IDENTIFIER_MODEL_PATH', None)
     # Fruit classes (for display purposes)
     FRUIT_TYPES = ['apples', 'mangos', 'oranges']
     GRADES = ['A', 'B', 'C']

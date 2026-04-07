@@ -517,6 +517,19 @@
     <div id="result" class="result-container" style="display:none"></div>
 </div>
 
+<!-- Unsupported Fruit Modal -->
+<div id="unsupported-modal" class="modal" style="display:none">
+    <div class="modal-content">
+        <span class="close" id="close-unsupported-modal">&times;</span>
+        <i class="fas fa-exclamation-triangle modal-icon" style="color: #f59e0b;"></i>
+        <h2>Unsupported Fruit Detected</h2>
+        <p id="unsupported-message">Sorry, we currently only support apples, mangoes, and oranges.</p>
+        <div class="modal-buttons">
+            <button class="btn btn-primary" id="unsupported-try-again">Try Another Image</button>
+        </div>
+    </div>
+</div>
+
 <!-- Login Modal (for limit reached) -->
 <div id="login-modal" class="modal" style="display:none">
     <div class="modal-content">
@@ -572,6 +585,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeLoginModal = document.getElementById('close-login-modal');
     const saveModal = document.getElementById('save-modal');
     const saveLaterBtn = document.getElementById('save-later-btn');
+    const unsupportedModal = document.getElementById('unsupported-modal');
+    const closeUnsupportedModal = document.getElementById('close-unsupported-modal');
+    const unsupportedTryAgain = document.getElementById('unsupported-try-again');
     
     // Check remaining predictions on page load
     async function checkRemainingPredictions() {
@@ -618,6 +634,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 modal.style.display = 'none';
             }, 300);
         }
+    }
+    
+    // Reset upload form
+    function resetUpload() {
+        currentFile = null;
+        if (fileInput) {
+            fileInput.value = '';
+        }
+        document.getElementById('preview-container')?.remove();
+        document.getElementById('result')?.remove();
     }
     
     // Show error message
@@ -790,12 +816,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         setTimeout(() => {
             updateLoadingStep(1);
-            if (loadingText) loadingText.textContent = 'AI is analyzing quality...';
+            if (loadingText) loadingText.textContent = 'Identifying fruit type...';
         }, 1500);
         
         setTimeout(() => {
             updateLoadingStep(2);
-            if (loadingText) loadingText.textContent = 'Generating grade...';
+            if (loadingText) loadingText.textContent = 'Analyzing quality...';
         }, 3000);
         
         // Upload file
@@ -831,6 +857,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     showModal(loginModal);
                 } else {
                     showError(data.error || 'Access denied. Please login or register.');
+                }
+                return;
+            }
+            
+            // Handle 400 (unsupported fruit or other bad request)
+            if (response.status === 400) {
+                const data = await response.json();
+                console.log('400 Response:', data);
+                
+                // Hide loading modal
+                hideModal(loadingModal);
+                
+                if (data.unsupported_fruit) {
+                    const unsupportedMessage = document.getElementById('unsupported-message');
+                    if (unsupportedMessage) {
+                        unsupportedMessage.textContent = data.error || 'Sorry, we currently only support apples, mangoes, and oranges. Please upload an image of one of these fruits.';
+                    }
+                    showModal(unsupportedModal);
+                } else {
+                    showError(data.error || 'Invalid request. Please try again.');
                 }
                 return;
             }
@@ -957,6 +1003,20 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    if (closeUnsupportedModal) {
+        closeUnsupportedModal.addEventListener('click', function() {
+            hideModal(unsupportedModal);
+            resetUpload();
+        });
+    }
+    
+    if (unsupportedTryAgain) {
+        unsupportedTryAgain.addEventListener('click', function() {
+            hideModal(unsupportedModal);
+            resetUpload();
+        });
+    }
+    
     // Drag and drop functionality with visual feedback
     if (uploadArea) {
         uploadArea.addEventListener('dragover', function(e) {
@@ -995,6 +1055,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (e.target === saveModal) {
             hideModal(saveModal);
+        }
+        if (e.target === unsupportedModal) {
+            hideModal(unsupportedModal);
+            resetUpload();
         }
     });
     
